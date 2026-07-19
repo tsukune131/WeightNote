@@ -42,6 +42,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
       <WaterSection profileId={profile.id} date={date} />
       <StepsSection key={`s-${profile.id}-${date}`} profileId={profile.id} date={date} />
       <ExerciseSection profileId={profile.id} date={date} />
+      <NoteSection key={`n-${profile.id}-${date}`} profileId={profile.id} date={date} />
       <DailySummary profile={profile} date={date} />
     </div>
   );
@@ -537,6 +538,53 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- 日記メモ ---------- */
+
+function NoteSection({ profileId, date }: { profileId: number; date: string }) {
+  const entry = useEntry<{ id: number; text: string }>('notes', profileId, date);
+  const [text, setText] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (entry) setText(entry.text);
+  }, [entry?.id]);
+
+  const dirty = text !== (entry?.text ?? '');
+
+  async function save() {
+    const t = text.trim();
+    if (entry) {
+      if (t) await db.notes.update(entry.id, { text: t });
+      else await db.notes.delete(entry.id); // 空にして保存したら消す
+    } else if (t) {
+      await db.notes.add({ profileId, date, text: t } as never);
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }
+
+  return (
+    <div className="card">
+      <h2>この日のメモ</h2>
+      <textarea
+        className="note-area"
+        rows={4}
+        placeholder="がんばったこと、気づいたこと、明日の自分へのひとことなど"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <div className="row" style={{ marginTop: 8 }}>
+        <span className="muted" style={{ alignSelf: 'center' }}>
+          {entry != null && !dirty ? '書き込み済み' : ''}
+        </span>
+        <button onClick={() => void save()} disabled={!dirty} style={{ flex: '0 0 auto' }}>
+          {saved ? '保存済み✓' : '保存'}
+        </button>
+      </div>
     </div>
   );
 }

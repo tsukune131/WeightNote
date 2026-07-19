@@ -407,6 +407,33 @@ button:disabled {
   border-top: 1px dashed var(--border);
 }
 
+/* ---- 日記メモ: ノートの罫線入りテキストエリア ---- */
+
+.note-area {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* iOSのズーム防止 */
+  line-height: 28px;
+  padding: 8px 10px;
+  min-height: 120px;
+  resize: vertical;
+  background-image: repeating-linear-gradient(
+    transparent 0 27px,
+    var(--border) 27px 28px
+  );
+  background-origin: content-box;
+  background-attachment: local;
+}
+
+.note-area:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* ---- きょうのひとこと(余白のメモ) ---- */
 
 .tip-card {
