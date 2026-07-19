@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, setActiveProfileId, type Profile } from './db';
+import { db, type Profile } from './db';
 import { Onboarding } from './components/Onboarding';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
@@ -50,18 +50,6 @@ export default function App() {
     <div>
       <div className="app-header">
         <h1>WeightNote</h1>
-        <select
-          style={{ width: 'auto', marginTop: 0 }}
-          value={profile.id}
-          onChange={(e) => void setActiveProfileId(Number(e.target.value))}
-          aria-label="プロフィール切替"
-        >
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
       </div>
 
       {tab === 'you' && <YouPage profile={profile} />}
