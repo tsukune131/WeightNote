@@ -109,8 +109,24 @@ select {
   font-size: 16px; /* iOSのズーム防止 */
 }
 
+/* iOSのdate/timeはネイティブ描画のままだとCSSの幅指定を無視して
+   はみ出すため、appearanceを外して通常のボックスとして描画させる */
+input[type='date'],
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  min-height: 38px; /* iOSで値が空のとき潰れるのを防ぐ */
+  text-align: left;
+}
+
+input::-webkit-date-and-time-value {
+  text-align: left; /* iOSのデフォルト中央寄せを解除 */
+}
+
 .row {
   display: flex;
+  flex-wrap: wrap; /* 収まらない場合ははみ出さず折り返す */
   gap: 8px;
 }
 
