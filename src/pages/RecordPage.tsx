@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Profile } from '../db';
+import { db, type Food, type Profile } from '../db';
 import {
   ageAt,
   bmr,
@@ -164,6 +164,34 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
 
   const total = MEAL_FIELDS.reduce((sum, [k]) => sum + (Number(values[k]) || 0), 0);
 
+  // マイメニュー
+  const foods = useLiveQuery(
+    async () => {
+      const rows = await db.foods.where('profileId').equals(profileId).toArray();
+      rows.sort((a, b) => b.uses - a.uses);
+      return rows;
+    },
+    [profileId],
+  );
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [newName, setNewName] = useState('');
+  const [newKcal, setNewKcal] = useState('');
+
+  async function applyFood(key: string, food: Food) {
+    // 選んだメニューのkcalをその食事に加算。時刻が未入力なら現在時刻を入れる
+    setValues((v) => ({ ...v, [key]: String((Number(v[key]) || 0) + food.kcal) }));
+    setTimes((t) => (t[key] ? t : { ...t, [key]: nowTimeStr() }));
+    await db.foods.update(food.id, { uses: food.uses + 1 });
+  }
+
+  async function addFood() {
+    const k = Number(newKcal);
+    if (!newName.trim() || !(k > 0)) return;
+    await db.foods.add({ profileId, name: newName.trim(), kcal: k, uses: 0 } as never);
+    setNewName('');
+    setNewKcal('');
+  }
+
   async function save() {
     const data = {
       breakfast: Number(values.breakfast) || 0,
@@ -185,25 +213,91 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
     <div className="card">
       <h2>🍽️ 食事カロリー</h2>
       {MEAL_FIELDS.map(([key, label]) => (
-        <div className="row" key={key}>
-          <label className="field">
-            {label}(kcal)
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              value={values[key]}
-              onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
-            />
-          </label>
-          <label className="field">
-            時刻
-            <input
-              type="time"
-              value={times[key]}
-              onChange={(e) => setTimes((t) => ({ ...t, [key]: e.target.value }))}
-            />
-          </label>
+        <div key={key}>
+          <div className="row" style={{ alignItems: 'flex-end' }}>
+            <label className="field">
+              {label}(kcal)
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={values[key]}
+                onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              時刻
+              <input
+                type="time"
+                value={times[key]}
+                onChange={(e) => setTimes((t) => ({ ...t, [key]: e.target.value }))}
+              />
+            </label>
+            <button
+              className={`secondary ${menuFor === key ? 'active' : ''}`}
+              style={{ flex: '0 0 auto', marginBottom: 8 }}
+              onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
+              aria-label={`${label}にマイメニューから入力`}
+            >
+              📖
+            </button>
+          </div>
+          {menuFor === key && (
+            <div className="menu-panel">
+              {(foods ?? []).length === 0 && (
+                <p className="muted" style={{ margin: '0 0 6px' }}>
+                  よく食べる物を登録すると、タップするだけでカロリーを入力できます。
+                </p>
+              )}
+              {(foods ?? []).length > 0 && (
+                <div className="chips">
+                  {foods!.map((f) => (
+                    <span className="chip" key={f.id}>
+                      <button className="chip-main" onClick={() => void applyFood(key, f)}>
+                        {f.name} {f.kcal}kcal
+                      </button>
+                      <button
+                        className="chip-x"
+                        aria-label={`${f.name}を削除`}
+                        onClick={() => void db.foods.delete(f.id)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="row" style={{ marginTop: 8, alignItems: 'flex-end' }}>
+                <label className="field" style={{ marginBottom: 0 }}>
+                  名前
+                  <input
+                    type="text"
+                    placeholder="例: 納豆ごはん"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </label>
+                <label className="field" style={{ marginBottom: 0 }}>
+                  kcal
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    value={newKcal}
+                    onChange={(e) => setNewKcal(e.target.value)}
+                  />
+                </label>
+                <button
+                  className="secondary"
+                  style={{ flex: '0 0 auto' }}
+                  onClick={() => void addFood()}
+                  disabled={!newName.trim() || !(Number(newKcal) > 0)}
+                >
+                  登録
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
       <div className="row" style={{ alignItems: 'center' }}>

@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { todayStr } from './date';
 
-const TABLES = ['profiles', 'weights', 'meals', 'waterLogs', 'steps', 'exercises', 'settings'] as const;
+const TABLES = ['profiles', 'weights', 'meals', 'waterLogs', 'steps', 'exercises', 'foods', 'settings'] as const;
 
 interface BackupFile {
   app: string;

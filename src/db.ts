@@ -59,6 +59,15 @@ export interface ExerciseEntry {
   kcal: number;
 }
 
+/** マイメニュー(よく食べる物の登録) */
+export interface Food {
+  id: number;
+  profileId: number;
+  name: string;
+  kcal: number;
+  uses: number; // 使用回数(よく使う順の表示用)
+}
+
 export interface Setting {
   key: string;
   value: string;
@@ -71,6 +80,7 @@ export const db = new Dexie('weight-app') as Dexie & {
   waterLogs: EntityTable<WaterLog, 'id'>;
   steps: EntityTable<StepEntry, 'id'>;
   exercises: EntityTable<ExerciseEntry, 'id'>;
+  foods: EntityTable<Food, 'id'>;
   settings: EntityTable<Setting, 'key'>;
 };
 
@@ -84,6 +94,11 @@ db.version(1).stores({
   settings: 'key',
 });
 
+// v2: マイメニュー(foods)を追加
+db.version(2).stores({
+  foods: '++id, profileId',
+});
+
 export async function setActiveProfileId(id: number): Promise<void> {
   await db.settings.put({ key: 'activeProfileId', value: String(id) });
 }
@@ -91,10 +106,10 @@ export async function setActiveProfileId(id: number): Promise<void> {
 export async function deleteProfile(id: number): Promise<void> {
   await db.transaction(
     'rw',
-    [db.profiles, db.weights, db.meals, db.waterLogs, db.steps, db.exercises],
+    [db.profiles, db.weights, db.meals, db.waterLogs, db.steps, db.exercises, db.foods],
     async () => {
       await db.profiles.delete(id);
-      for (const table of [db.weights, db.meals, db.waterLogs, db.steps, db.exercises]) {
+      for (const table of [db.weights, db.meals, db.waterLogs, db.steps, db.exercises, db.foods]) {
         await table.where('profileId').equals(id).delete();
       }
     },

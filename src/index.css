@@ -277,6 +277,46 @@ button:disabled {
   color: var(--muted);
 }
 
+.menu-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.chip .chip-main {
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 4px 6px 12px;
+  border-radius: 0;
+}
+
+.chip .chip-x {
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 10px 6px 4px;
+  border-radius: 0;
+  font-size: 13px;
+}
+
 .chart-nav {
   display: flex;
   align-items: center;
