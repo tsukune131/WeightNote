@@ -49,6 +49,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
       </div>
 
       <WeightSection key={`w-${profile.id}-${date}`} profileId={profile.id} date={date} />
+      <HealthMetricsSection key={`h-${profile.id}-${date}`} profile={profile} date={date} />
       <MealSection key={`m-${profile.id}-${date}`} profile={profile} date={date} />
       <WaterSection profileId={profile.id} date={date} />
       <StepsSection key={`s-${profile.id}-${date}`} profileId={profile.id} date={date} />
@@ -127,6 +128,110 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
           {saved ? '保存済み✓' : '保存'}
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ---------- 検査値 ---------- */
+
+const METRIC_FIELDS = [
+  ['hba1c', 'HbA1c', '%', 'trackHbA1c'],
+  ['glucose', '血糖値', 'mg/dL', 'trackGlucose'],
+  ['ldl', 'LDL', 'mg/dL', 'trackLDL'],
+  ['tg', '中性脂肪(TG)', 'mg/dL', 'trackTG'],
+] as const;
+
+function HealthMetricsSection({ profile, date }: { profile: Profile; date: string }) {
+  const profileId = profile.id;
+  const entry = useEntry<{
+    id: number;
+    hba1c?: number;
+    glucose?: number;
+    systolic?: number;
+    diastolic?: number;
+    ldl?: number;
+    tg?: number;
+  }>('healthMetrics', profileId, date);
+
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [systolic, setSystolic] = useState('');
+  const [diastolic, setDiastolic] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (entry) {
+      setValues({
+        hba1c: entry.hba1c != null ? String(entry.hba1c) : '',
+        glucose: entry.glucose != null ? String(entry.glucose) : '',
+        ldl: entry.ldl != null ? String(entry.ldl) : '',
+        tg: entry.tg != null ? String(entry.tg) : '',
+      });
+      setSystolic(entry.systolic != null ? String(entry.systolic) : '');
+      setDiastolic(entry.diastolic != null ? String(entry.diastolic) : '');
+    }
+  }, [entry?.id]);
+
+  const activeFields = METRIC_FIELDS.filter(([, , , flag]) => profile[flag]);
+  if (!activeFields.length && !profile.trackBloodPressure) return null;
+
+  async function save() {
+    const data: Record<string, number | undefined> = {};
+    for (const [key] of METRIC_FIELDS) {
+      const v = Number(values[key]);
+      data[key] = v > 0 ? v : undefined;
+    }
+    const sys = Number(systolic);
+    const dia = Number(diastolic);
+    data.systolic = sys > 0 ? sys : undefined;
+    data.diastolic = dia > 0 ? dia : undefined;
+
+    if (entry) await db.healthMetrics.update(entry.id, data);
+    else await db.healthMetrics.add({ profileId, date, ...data } as never);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }
+
+  return (
+    <div className="card">
+      <h2>検査値</h2>
+      {activeFields.map(([key, label, unit]) => (
+        <label className="field" key={key}>
+          {label}({unit})
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min="0"
+            value={values[key] ?? ''}
+            onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+          />
+        </label>
+      ))}
+      {profile.trackBloodPressure && (
+        <div className="row">
+          <label className="field">
+            血圧・収縮期(mmHg)
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              value={systolic}
+              onChange={(e) => setSystolic(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            血圧・拡張期(mmHg)
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              value={diastolic}
+              onChange={(e) => setDiastolic(e.target.value)}
+            />
+          </label>
+        </div>
+      )}
+      <button onClick={() => void save()}>{saved ? '保存済み✓' : '保存'}</button>
     </div>
   );
 }

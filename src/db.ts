@@ -13,6 +13,12 @@ export interface Profile {
   targetFatPct?: number; // 目標体脂肪率(%)
   targetDate?: string; // YYYY-MM-DD
   useMedication?: boolean; // 服薬管理を使うか
+  // 任意の検査値記録。オンにしたものだけ「きょう」に入力欄が出る
+  trackHbA1c?: boolean;
+  trackGlucose?: boolean;
+  trackBloodPressure?: boolean;
+  trackLDL?: boolean;
+  trackTG?: boolean;
 }
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -106,6 +112,19 @@ export interface Food {
   uses: number; // 使用回数(よく使う順の表示用)
 }
 
+/** 任意の検査値。その日ぶんだけ入力があるフィールドを持つ */
+export interface HealthMetricEntry {
+  id: number;
+  profileId: number;
+  date: string;
+  hba1c?: number; // HbA1c(%)
+  glucose?: number; // 血糖値(mg/dL)
+  systolic?: number; // 血圧・収縮期(mmHg)
+  diastolic?: number; // 血圧・拡張期(mmHg)
+  ldl?: number; // LDLコレステロール(mg/dL)
+  tg?: number; // 中性脂肪(mg/dL)
+}
+
 export interface Setting {
   key: string;
   value: string;
@@ -122,6 +141,7 @@ export const db = new Dexie('weight-app') as Dexie & {
   notes: EntityTable<NoteEntry, 'id'>;
   medications: EntityTable<Medication, 'id'>;
   medicationLogs: EntityTable<MedicationLog, 'id'>;
+  healthMetrics: EntityTable<HealthMetricEntry, 'id'>;
   settings: EntityTable<Setting, 'key'>;
 };
 
@@ -161,6 +181,15 @@ db.version(6).stores({
   medicationLogs: '++id, profileId, [profileId+date]',
 });
 
+// v7: medicationLogsにmedicationIdのインデックスを追加。
+// (削除時に where('medicationId') が未定義インデックスでエラーになり、
+// トランザクションごと削除がロールバックしていたバグの修正)
+// あわせて任意の血液検査値(HbA1c・血糖値・血圧・LDL・中性脂肪)を追加
+db.version(7).stores({
+  medicationLogs: '++id, profileId, [profileId+date], medicationId',
+  healthMetrics: '++id, profileId, [profileId+date]',
+});
+
 export async function setActiveProfileId(id: number): Promise<void> {
   await db.settings.put({ key: 'activeProfileId', value: String(id) });
 }
@@ -179,6 +208,7 @@ export async function deleteProfile(id: number): Promise<void> {
       db.notes,
       db.medications,
       db.medicationLogs,
+      db.healthMetrics,
     ],
     async () => {
       await db.profiles.delete(id);
@@ -192,6 +222,7 @@ export async function deleteProfile(id: number): Promise<void> {
         db.notes,
         db.medications,
         db.medicationLogs,
+        db.healthMetrics,
       ]) {
         await table.where('profileId').equals(id).delete();
       }

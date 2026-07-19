@@ -17,6 +17,7 @@ import {
 import {
   db,
   type ExerciseEntry,
+  type HealthMetricEntry,
   type MealEntry,
   type MealSlot,
   type Medication,
@@ -67,9 +68,15 @@ interface DayRow {
   exerciseKcal: number;
   burn?: number; // 活動消費合計(記録がない未来日はundefined)
   deficit?: number; // カロリー貯金 = BMR×1.2 + 活動消費 − 摂取(食事記録がある日のみ)
+  hba1c?: number;
+  glucose?: number;
+  systolic?: number;
+  diastolic?: number;
+  ldl?: number;
+  tg?: number;
 }
 
-type ChartKey = 'weight' | 'intake' | 'water' | 'steps' | 'burn' | 'meds';
+type ChartKey = 'weight' | 'intake' | 'water' | 'steps' | 'burn' | 'meds' | 'health';
 
 const CHART_TABS: { key: ChartKey; label: string }[] = [
   { key: 'weight', label: '体重・体脂肪率' },
@@ -111,9 +118,18 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       ?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   }, [chart]);
 
-  const tabs = profile.useMedication
-    ? [...CHART_TABS, { key: 'meds' as ChartKey, label: '服薬' }]
-    : CHART_TABS;
+  const hasHealthTracking =
+    profile.trackHbA1c ||
+    profile.trackGlucose ||
+    profile.trackBloodPressure ||
+    profile.trackLDL ||
+    profile.trackTG;
+
+  const tabs = [
+    ...CHART_TABS,
+    ...(hasHealthTracking ? [{ key: 'health' as ChartKey, label: '検査値' }] : []),
+    ...(profile.useMedication ? [{ key: 'meds' as ChartKey, label: '服薬' }] : []),
+  ];
 
   function moveChart(delta: number) {
     const i = tabs.findIndex((t) => t.key === chart);
@@ -131,8 +147,18 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           .where('[profileId+date]')
           .between([profile.id, start], [profile.id, end], true, true)
           .toArray();
-      const [weights, meals, waterLogs, steps, exercises, notes, medLogs, allWeights, medications] =
-        await Promise.all([
+      const [
+        weights,
+        meals,
+        waterLogs,
+        steps,
+        exercises,
+        notes,
+        medLogs,
+        allWeights,
+        medications,
+        healthMetrics,
+      ] = await Promise.all([
           range('weights'),
           range('meals'),
           range('waterLogs'),
@@ -145,6 +171,10 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             .toArray(),
           db.weights.where('profileId').equals(profile.id).toArray(),
           db.medications.where('profileId').equals(profile.id).toArray(),
+          db.healthMetrics
+            .where('[profileId+date]')
+            .between([profile.id, start], [profile.id, end], true, true)
+            .toArray(),
         ]);
       return {
         weights: weights as WeightEntry[],
@@ -155,6 +185,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         notes: notes as NoteEntry[],
         medLogs: medLogs as MedicationLog[],
         medications: medications as Medication[],
+        healthMetrics: healthMetrics as HealthMetricEntry[],
         allWeights,
       };
     },
@@ -229,6 +260,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       const water = raw.waterLogs
         .filter((x) => x.date === date)
         .reduce((s, x) => s + x.ml, 0);
+      const health = raw.healthMetrics.find((x) => x.date === date);
 
       // 歩数→kcal換算に使う体重(当日→それ以前の直近→最新)
       const refWeight =
@@ -275,6 +307,12 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         exerciseKcal,
         burn: burn != null ? Math.round(burn) : undefined,
         deficit: deficit != null ? Math.round(deficit) : undefined,
+        hba1c: health?.hba1c,
+        glucose: health?.glucose,
+        systolic: health?.systolic,
+        diastolic: health?.diastolic,
+        ldl: health?.ldl,
+        tg: health?.tg,
       };
     });
   }, [raw, month, required, profile.birthDate, profile.heightCm, profile.sex]);
@@ -565,6 +603,158 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             貯金が約7,200kcal貯まるごとに体重が1kg減る計算です。食事と体重を記録した日に表示されます。
           </p>
         </div>
+      )}
+
+      {chart === 'health' && (
+        <>
+          {!rows.some(
+            (r) =>
+              r.hba1c != null ||
+              r.glucose != null ||
+              r.systolic != null ||
+              r.ldl != null ||
+              r.tg != null,
+          ) && (
+            <div className="card">
+              <div className="empty-note">
+                この月の検査値の記録がまだありません。
+                <br />
+                「きょう」タブから入力できます。
+              </div>
+            </div>
+          )}
+          {profile.trackHbA1c && rows.some((r) => r.hba1c != null) && (
+            <ChartCard title="HbA1c" sub="単位: %">
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke={theme.grid} vertical={false} />
+                <XAxis {...xAxisProps(theme)} />
+                <YAxis
+                  {...yAxisProps(theme)}
+                  domain={['dataMin - 0.2', 'dataMax + 0.2']}
+                  tickFormatter={(v: number) => v.toFixed(1)}
+                />
+                <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('%')} labelFormatter={fmtDay} />
+                <Line
+                  type="monotone"
+                  dataKey="hba1c"
+                  name="HbA1c"
+                  stroke={theme.weight}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: theme.weight, strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ChartCard>
+          )}
+          {profile.trackGlucose && rows.some((r) => r.glucose != null) && (
+            <ChartCard title="血糖値" sub="単位: mg/dL">
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke={theme.grid} vertical={false} />
+                <XAxis {...xAxisProps(theme)} />
+                <YAxis {...yAxisProps(theme)} domain={['dataMin - 10', 'dataMax + 10']} />
+                <Tooltip
+                  {...tooltipProps(theme)}
+                  formatter={fmtUnit('mg/dL')}
+                  labelFormatter={fmtDay}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="glucose"
+                  name="血糖値"
+                  stroke={theme.exercise}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: theme.exercise, strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ChartCard>
+          )}
+          {profile.trackBloodPressure && rows.some((r) => r.systolic != null) && (
+            <ChartCard title="血圧" sub="単位: mmHg">
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke={theme.grid} vertical={false} />
+                <XAxis {...xAxisProps(theme)} />
+                <YAxis {...yAxisProps(theme)} domain={['dataMin - 5', 'dataMax + 5']} />
+                <Tooltip
+                  {...tooltipProps(theme)}
+                  formatter={fmtUnit('mmHg')}
+                  labelFormatter={fmtDay}
+                />
+                <Legend {...legendProps()} />
+                <Line
+                  type="monotone"
+                  dataKey="systolic"
+                  name="収縮期"
+                  stroke={theme.divergeNeg}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: theme.divergeNeg, strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+                <Line
+                  type="monotone"
+                  dataKey="diastolic"
+                  name="拡張期"
+                  stroke={theme.steps}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: theme.steps, strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ChartCard>
+          )}
+          {profile.trackLDL && rows.some((r) => r.ldl != null) && (
+            <ChartCard title="LDLコレステロール" sub="単位: mg/dL">
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke={theme.grid} vertical={false} />
+                <XAxis {...xAxisProps(theme)} />
+                <YAxis {...yAxisProps(theme)} domain={['dataMin - 10', 'dataMax + 10']} />
+                <Tooltip
+                  {...tooltipProps(theme)}
+                  formatter={fmtUnit('mg/dL')}
+                  labelFormatter={fmtDay}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="ldl"
+                  name="LDL"
+                  stroke={theme.fat}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: theme.fat, strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ChartCard>
+          )}
+          {profile.trackTG && rows.some((r) => r.tg != null) && (
+            <ChartCard title="中性脂肪(TG)" sub="単位: mg/dL">
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke={theme.grid} vertical={false} />
+                <XAxis {...xAxisProps(theme)} />
+                <YAxis {...yAxisProps(theme)} domain={['dataMin - 10', 'dataMax + 10']} />
+                <Tooltip
+                  {...tooltipProps(theme)}
+                  formatter={fmtUnit('mg/dL')}
+                  labelFormatter={fmtDay}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="tg"
+                  name="中性脂肪"
+                  stroke={theme.snack}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: theme.snack, strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ChartCard>
+          )}
+        </>
       )}
 
       {chart === 'meds' &&

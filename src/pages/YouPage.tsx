@@ -220,6 +220,33 @@ export function YouPage({ profile }: { profile: Profile }) {
         )}
       </div>
 
+      <div className="card">
+        <h2>検査値の記録</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          オンにした項目だけ「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
+        </p>
+        <div className="row" style={{ flexWrap: 'wrap' }}>
+          {(
+            [
+              ['trackHbA1c', 'HbA1c'],
+              ['trackGlucose', '血糖値'],
+              ['trackBloodPressure', '血圧'],
+              ['trackLDL', 'LDL'],
+              ['trackTG', '中性脂肪(TG)'],
+            ] as const
+          ).map(([key, label]) => (
+            <label className="checkbox-inline" key={key}>
+              <input
+                type="checkbox"
+                checked={profile[key] ?? false}
+                onChange={(e) => void db.profiles.update(profile.id, { [key]: e.target.checked })}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </div>
+
       <p className="legal-links">
         <a href={`${import.meta.env.BASE_URL}legal/privacy.html`} target="_blank" rel="noreferrer">
           プライバシーポリシー
