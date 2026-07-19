@@ -119,6 +119,16 @@ select {
   min-width: 0;
 }
 
+/* iOSのdate/timeピッカーは内部UIの最低幅を無視して描画がはみ出すため、
+   固定幅を確保して隣の項目だけを伸縮させる */
+.row > label:has(> input[type='date']) {
+  flex: 0 0 152px;
+}
+
+.row > label:has(> input[type='time']) {
+  flex: 0 0 110px;
+}
+
 button {
   border: none;
   border-radius: 8px;
