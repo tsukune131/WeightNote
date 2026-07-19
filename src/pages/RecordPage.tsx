@@ -342,9 +342,16 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
     <div className="card">
       <h2>飲水 <span className="chart-sub">合計 {total.toLocaleString()} ml</span></h2>
       <div className="row">
-        {[100, 200, 500].map((ml) => (
-          <button key={ml} className="secondary" onClick={() => void add(ml)}>
-            +{ml}ml
+        {(
+          [
+            { ml: 100, label: '1〜2口' },
+            { ml: 200, label: 'コップ1杯' },
+            { ml: 500, label: 'ペットボトル' },
+          ] as const
+        ).map(({ ml, label }) => (
+          <button key={ml} className="secondary water-btn" onClick={() => void add(ml)}>
+            {label}
+            <small>{ml}ml</small>
           </button>
         ))}
       </div>

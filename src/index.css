@@ -419,6 +419,24 @@ button:disabled {
   border-top: 1px dashed var(--border);
 }
 
+/* ---- 飲水クイックボタン ---- */
+
+.water-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.water-btn small {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
 /* ---- 日記メモ: ノートの罫線入りテキストエリア ---- */
 
 .note-area {
