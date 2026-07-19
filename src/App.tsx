@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, setActiveProfileId, type Profile } from './db';
-import { ProfileForm } from './components/ProfileForm';
+import { Onboarding } from './components/Onboarding';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
 import { TrendsPage } from './pages/TrendsPage';
@@ -16,28 +16,29 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('record');
+  // プロフィール作成の途中でprofiles.length が 0→1 に変わっても
+  // オンボーディングの残りのステップ(目標設定・使い方)が飛ばされないよう、
+  // 一度決めたら明示的にonComplete()が呼ばれるまで維持する
+  const [onboarding, setOnboarding] = useState<boolean | undefined>(undefined);
 
   const profiles = useLiveQuery(() => db.profiles.toArray(), []);
   const activeIdSetting = useLiveQuery(() => db.settings.get('activeProfileId'), []);
 
-  if (profiles === undefined) return null; // 読み込み中
+  useEffect(() => {
+    if (profiles === undefined) return;
+    if (profiles.length === 0) {
+      // プロフィールが無ければ常にオンボーディングへ(削除して0件に戻った場合も含む)
+      setOnboarding(true);
+    } else if (onboarding === undefined) {
+      // 既存ユーザーの起動時のみ、初回判定としてスキップする
+      setOnboarding(false);
+    }
+  }, [profiles, onboarding]);
 
-  if (profiles.length === 0) {
-    return (
-      <div>
-        <div className="app-header">
-          <h1>体重管理</h1>
-        </div>
-        <div className="card">
-          <h2>ようこそ!まずプロフィールを作成してください</h2>
-          <ProfileForm
-            onSaved={async (id) => {
-              await setActiveProfileId(id);
-            }}
-          />
-        </div>
-      </div>
-    );
+  if (profiles === undefined || onboarding === undefined) return null; // 読み込み中
+
+  if (onboarding) {
+    return <Onboarding onComplete={() => setOnboarding(false)} />;
   }
 
   const activeId = activeIdSetting ? Number(activeIdSetting.value) : undefined;

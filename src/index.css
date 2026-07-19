@@ -277,6 +277,54 @@ button:disabled {
   color: var(--muted);
 }
 
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0 14px;
+}
+
+.onboarding-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.onboarding-dots .dot.active {
+  background: var(--accent);
+}
+
+.onboarding-list {
+  margin: 0 0 14px;
+  padding-left: 4px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.onboarding-guide-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.onboarding-guide-item .icon {
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.onboarding-guide-item strong {
+  font-size: 14px;
+}
+
+.onboarding-guide-item p {
+  margin: 2px 0 0;
+}
+
 .streak-row {
   display: flex;
   align-items: center;
