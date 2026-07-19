@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Food, type Profile } from '../db';
+import { StreakSummary } from '../components/StreakSummary';
 import {
   ageAt,
   bmr,
@@ -17,6 +18,8 @@ export function RecordPage({ profile }: { profile: Profile }) {
 
   return (
     <div>
+      <StreakSummary profile={profile} />
+
       <div className="date-nav">
         <button onClick={() => setDate((d) => addDays(d, -1))}>◀</button>
         <div className="title">{formatDateShort(date)}</div>

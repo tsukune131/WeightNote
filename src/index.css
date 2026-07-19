@@ -277,6 +277,22 @@ button:disabled {
   color: var(--muted);
 }
 
+.streak-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.streak-count {
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .menu-panel {
   background: var(--bg);
   border: 1px solid var(--border);
