@@ -75,6 +75,16 @@ body {
   margin: 0 0 10px;
 }
 
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-head h2 {
+  margin-bottom: 10px;
+}
+
 .card h3 {
   font-size: 13px;
   color: var(--muted);

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, deleteProfile, setActiveProfileId, type Profile } from '../db';
+import { db, type Profile } from '../db';
 import { ProfileForm } from '../components/ProfileForm';
 import {
   ACTIVITY_LEVELS,
@@ -13,23 +13,19 @@ import {
   tdee,
   totalKcalToGoal,
 } from '../lib/calc';
-import { exportAllData, importAllData } from '../lib/backup';
 
 export function YouPage({ profile }: { profile: Profile }) {
   const [editing, setEditing] = useState(false);
-  const [adding, setAdding] = useState(false);
   const [targetWeight, setTargetWeight] = useState(
     profile.targetWeightKg != null ? String(profile.targetWeightKg) : '',
   );
   const [targetDate, setTargetDate] = useState(profile.targetDate ?? '');
-  const fileRef = useRef<HTMLInputElement>(null);
 
   // プロフィール切替時にフォームを同期
   useEffect(() => {
     setTargetWeight(profile.targetWeightKg != null ? String(profile.targetWeightKg) : '');
     setTargetDate(profile.targetDate ?? '');
     setEditing(false);
-    setAdding(false);
   }, [profile.id, profile.targetWeightKg, profile.targetDate]);
 
   const latest = useLiveQuery(
@@ -70,26 +66,20 @@ export function YouPage({ profile }: { profile: Profile }) {
     });
   }
 
-  async function handleDelete() {
-    if (!confirm(`プロフィール「${profile.name}」とその記録をすべて削除します。よろしいですか?`))
-      return;
-    await deleteProfile(profile.id);
-  }
-
-  async function handleImport(file: File) {
-    if (!confirm('現在の全データをインポート内容で置き換えます。よろしいですか?')) return;
-    try {
-      await importAllData(file);
-      alert('インポートが完了しました');
-    } catch (e) {
-      alert(`インポートに失敗しました: ${e instanceof Error ? e.message : e}`);
-    }
-  }
-
   return (
     <div>
       <div className="card">
-        <h2>{profile.name} さんの現在</h2>
+        <div className="card-head">
+          <h2>{profile.name} さんの現在</h2>
+          <button className="ghost" onClick={() => setEditing((v) => !v)}>
+            {editing ? '閉じる' : '編集'}
+          </button>
+        </div>
+        {editing && (
+          <div style={{ marginBottom: 12 }}>
+            <ProfileForm profile={profile} onSaved={() => setEditing(false)} />
+          </div>
+        )}
         <div className="stat-grid">
           <div className="stat">
             <div className="label">身長</div>
@@ -203,61 +193,6 @@ export function YouPage({ profile }: { profile: Profile }) {
         )}
       </div>
 
-      <div className="card">
-        <h2>プロフィール設定</h2>
-        {editing ? (
-          <ProfileForm profile={profile} onSaved={() => setEditing(false)} />
-        ) : (
-          <div className="row">
-            <button className="secondary" onClick={() => setEditing(true)}>
-              編集
-            </button>
-            <button className="secondary" onClick={() => setAdding((v) => !v)}>
-              家族を追加
-            </button>
-            <button className="danger" onClick={() => void handleDelete()}>
-              削除
-            </button>
-          </div>
-        )}
-        {adding && (
-          <div style={{ marginTop: 12 }}>
-            <h3>新しいプロフィール</h3>
-            <ProfileForm
-              onSaved={async (id) => {
-                await setActiveProfileId(id);
-                setAdding(false);
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>バックアップ</h2>
-        <p className="muted">
-          データはこの端末のブラウザ内にのみ保存されます。定期的にエクスポートしてください。
-        </p>
-        <div className="row">
-          <button className="secondary" onClick={() => void exportAllData()}>
-            エクスポート
-          </button>
-          <button className="secondary" onClick={() => fileRef.current?.click()}>
-            インポート
-          </button>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void handleImport(f);
-            e.target.value = '';
-          }}
-        />
-      </div>
     </div>
   );
 }
