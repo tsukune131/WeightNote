@@ -10,10 +10,10 @@ const TrendsPage = lazy(() => import('./pages/TrendsPage').then((m) => ({ defaul
 
 type Tab = 'you' | 'record' | 'trends';
 
-const TABS: { key: Tab; icon: string; label: string }[] = [
-  { key: 'you', icon: '👤', label: 'あなた' },
-  { key: 'record', icon: '✏️', label: '記録' },
-  { key: 'trends', icon: '📈', label: '推移' },
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'you', label: 'あなた' },
+  { key: 'record', label: 'きょう' },
+  { key: 'trends', label: 'ふりかえり' },
 ];
 
 export default function App() {
@@ -49,7 +49,7 @@ export default function App() {
   return (
     <div>
       <div className="app-header">
-        <h1>体重管理</h1>
+        <h1>WeightNote</h1>
         <select
           style={{ width: 'auto', marginTop: 0 }}
           value={profile.id}
@@ -79,7 +79,6 @@ export default function App() {
             className={tab === t.key ? 'active' : ''}
             onClick={() => setTab(t.key)}
           >
-            <span className="icon">{t.icon}</span>
             {t.label}
           </button>
         ))}

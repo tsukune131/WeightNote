@@ -11,13 +11,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: '体重管理',
-        short_name: '体重管理',
-        description: '体重・食事・飲水・歩数を記録して目標達成を管理するアプリ',
+        name: 'WeightNote',
+        short_name: 'WeightNote',
+        description: '体重・食事・飲水・歩数を毎日書き込む健康手帳アプリ',
         lang: 'ja',
         display: 'standalone',
-        theme_color: '#2563eb',
-        background_color: '#f4f6fa',
+        theme_color: '#f5f5f0',
+        background_color: '#f5f5f0',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

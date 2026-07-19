@@ -16,10 +16,10 @@ const LIGHT = {
   exercise: '#eb6834', // orange
   divergePos: '#2a78d6', // blue(達成超過)
   divergeNeg: '#e34948', // red(不足)
-  grid: '#e1e0d9',
-  axis: '#898781',
-  reference: '#52514e',
-  surface: '#ffffff',
+  grid: '#e0e2da',
+  axis: '#8b9085',
+  reference: '#5d5f56',
+  surface: '#fffefb',
 };
 
 const DARK: typeof LIGHT = {
@@ -34,10 +34,10 @@ const DARK: typeof LIGHT = {
   exercise: '#d95926',
   divergePos: '#3987e5',
   divergeNeg: '#e66767',
-  grid: '#2c374a',
-  axis: '#93a1b5',
-  reference: '#c3c2b7',
-  surface: '#1a2233',
+  grid: '#3a3830',
+  axis: '#9a968a',
+  reference: '#c3c0b4',
+  surface: '#292822',
 };
 
 export type ChartTheme = typeof LIGHT;

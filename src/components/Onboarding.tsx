@@ -43,10 +43,10 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             記録データはこの端末の中だけに保存され、外部には送信されません。
           </p>
           <ul className="onboarding-list">
-            <li>⚖️ 体重・体脂肪率を記録</li>
-            <li>🍽️ 食事のカロリーと時刻を記録</li>
-            <li>👟 歩数・運動の消費カロリーを記録</li>
-            <li>📈 推移をグラフで確認</li>
+            <li>体重・体脂肪率を記録</li>
+            <li>食事のカロリーと時刻を記録</li>
+            <li>歩数・運動の消費カロリーを記録</li>
+            <li>推移をグラフでふりかえり</li>
           </ul>
           <button onClick={() => setStep('profile')}>はじめる</button>
         </div>
@@ -106,23 +106,20 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         <div className="card">
           <h2>使い方</h2>
           <div className="onboarding-guide-item">
-            <span className="icon">👤</span>
+            <span className="tab-name">あなた</span>
             <div>
-              <strong>あなた</strong>
               <p className="muted">プロフィールと目標、必要な1日消費カロリーを確認します。</p>
             </div>
           </div>
           <div className="onboarding-guide-item">
-            <span className="icon">✏️</span>
+            <span className="tab-name">きょう</span>
             <div>
-              <strong>記録</strong>
-              <p className="muted">毎日ここで体重・食事・飲水・歩数を入力します。</p>
+              <p className="muted">毎日ここで体重・食事・飲水・歩数を書き込みます。</p>
             </div>
           </div>
           <div className="onboarding-guide-item">
-            <span className="icon">📈</span>
+            <span className="tab-name">ふりかえり</span>
             <div>
-              <strong>推移</strong>
               <p className="muted">グラフで体重やカロリー貯金の推移を確認します。</p>
             </div>
           </div>

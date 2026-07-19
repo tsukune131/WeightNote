@@ -1,6 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2563eb"/>
-  <polyline points="96,176 192,256 288,208 416,336" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="416" cy="336" r="34" fill="#ffffff"/>
-  <line x1="96" y1="416" x2="416" y2="416" stroke="#bfdbfe" stroke-width="24" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="112" fill="#f7f7f3"/>
+  <g stroke="#e4e7e1" stroke-width="6">
+    <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="224" x2="512" y2="224"/>
+    <line x1="0" y1="320" x2="512" y2="320"/>
+    <line x1="0" y1="416" x2="512" y2="416"/>
+    <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="224" y1="0" x2="224" y2="512"/>
+    <line x1="320" y1="0" x2="320" y2="512"/>
+    <line x1="416" y1="0" x2="416" y2="512"/>
+  </g>
+  <polyline points="120,200 216,296 312,248 424,368" fill="none" stroke="#3a3d36" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="rotate(-12 356 156)">
+    <circle cx="356" cy="156" r="86" fill="none" stroke="#cf4a41" stroke-width="16" opacity="0.92"/>
+    <polyline points="316,158 346,190 400,124" fill="none" stroke="#cf4a41" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+  </g>
 </svg>

@@ -257,7 +257,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           <div className="empty-note">
             この月の記録がまだありません。
             <br />
-            「記録」タブから入力するとグラフが表示されます。
+            「きょう」タブから入力するとグラフが表示されます。
           </div>
         </div>
       )}
@@ -297,7 +297,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       {chart === 'weight' && !rows.some((r) => r.bodyFat != null) && (
         <div className="card">
           <div className="empty-note">
-            この月の体脂肪率の記録がまだありません。「記録」タブで体重と一緒に入力できます。
+            この月の体脂肪率の記録がまだありません。「きょう」タブで体重と一緒に入力できます。
           </div>
         </div>
       )}
@@ -387,7 +387,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       {chart === 'steps' && !selectedHourly && (
         <div className="card">
           <div className="empty-note">
-            「記録」タブで時間帯別の歩数を入力すると、1時間ごとのグラフが表示されます。
+            「きょう」タブで時間帯別の歩数を入力すると、1時間ごとのグラフが表示されます。
           </div>
         </div>
       )}

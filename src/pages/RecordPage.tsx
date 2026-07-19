@@ -80,7 +80,7 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
 
   return (
     <div className="card">
-      <h2>⚖️ 体重・体脂肪率</h2>
+      <h2>体重・体脂肪率</h2>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="field" style={{ marginBottom: 0 }}>
           体重(kg)
@@ -214,7 +214,7 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
 
   return (
     <div className="card">
-      <h2>🍽️ 食事カロリー</h2>
+      <h2>食事</h2>
       {MEAL_FIELDS.map(([key, label]) => (
         <div key={key}>
           <div className="row" style={{ alignItems: 'flex-end' }}>
@@ -241,7 +241,7 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
             className={`ghost menu-toggle ${menuFor === key ? 'active' : ''}`}
             onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
           >
-            📖 マイメニューから選ぶ
+            ＋ マイメニューから選ぶ
           </button>
           {menuFor === key && (
             <div className="menu-panel">
@@ -333,7 +333,7 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
 
   return (
     <div className="card">
-      <h2>💧 飲水 <span className="chart-sub">合計 {total.toLocaleString()} ml</span></h2>
+      <h2>飲水 <span className="chart-sub">合計 {total.toLocaleString()} ml</span></h2>
       <div className="row">
         {[100, 200, 500].map((ml) => (
           <button key={ml} className="secondary" onClick={() => void add(ml)}>
@@ -420,7 +420,7 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
 
   return (
     <div className="card">
-      <h2>👟 歩数</h2>
+      <h2>歩数</h2>
       <p className="muted" style={{ marginTop: 0 }}>
         iPhoneのヘルスケアアプリの歩数を転記してください。
       </p>
@@ -489,7 +489,7 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
 
   return (
     <div className="card">
-      <h2>🏃 運動での消費カロリー</h2>
+      <h2>運動での消費カロリー</h2>
       <p className="muted" style={{ marginTop: 0 }}>
         歩数以外の運動(筋トレ・水泳など)の消費カロリーを追加します。
       </p>
@@ -591,7 +591,7 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
 
   return (
     <div className="card">
-      <h2>📋 この日のまとめ</h2>
+      <h2>この日のまとめ</h2>
       <div className="stat-grid">
         <div className="stat">
           <div className="label">摂取カロリー</div>

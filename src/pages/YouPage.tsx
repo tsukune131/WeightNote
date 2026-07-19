@@ -121,7 +121,7 @@ export function YouPage({ profile }: { profile: Profile }) {
           活動レベル: {activityLabel} ・ {age}歳 ・ 推定消費は基礎代謝(Mifflin-St Jeor式)×活動係数
         </p>
         {weightKg == null && (
-          <p className="muted">「記録」タブで体重を入力するとBMIなどが表示されます。</p>
+          <p className="muted">「きょう」タブで体重を入力するとBMIなどが表示されます。</p>
         )}
       </div>
 
@@ -185,7 +185,7 @@ export function YouPage({ profile }: { profile: Profile }) {
         {hasGoal && totalKcal != null && (
           <p className="muted" style={{ marginBottom: 0 }}>
             必要1日消費カロリーは、運動を増やすことでも摂取カロリーを抑えることでも達成できます。
-            日々の達成状況は「推移」タブの消費・貯金で確認できます。
+            日々の達成状況は「ふりかえり」タブの消費・貯金で確認できます。
           </p>
         )}
         {hasGoal && remainDays === 0 && totalKcal != null && totalKcal > 0 && (

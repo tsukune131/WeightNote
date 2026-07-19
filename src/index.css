@@ -1,27 +1,42 @@
+/* ============================================================
+   WeightNote 「手帳」デザイン
+   方眼ノートの紙面に書き込む健康手帳。朱色はスタンプ・チェック・
+   達成の1点のみに使い、面は紙とインクで構成する。
+   ============================================================ */
+
 :root {
-  --bg: #f4f6fa;
-  --card: #ffffff;
-  --text: #1a2233;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --accent: #2563eb;
-  --accent-soft: #dbeafe;
-  --danger: #dc2626;
-  --success: #16a34a;
+  --bg: #f5f5f0; /* 紙 */
+  --grid: #e7e9e2; /* 方眼(横) */
+  --grid2: #ecede7; /* 方眼(縦) */
+  --card: #fffefb; /* ページ */
+  --text: #33362f; /* インク */
+  --muted: #8b9085; /* 鉛筆 */
+  --border: #e0e2da;
+  --accent: #cf4a41; /* 朱 */
+  --accent-soft: #f8e9e7;
+  --btn: #3a3d36; /* インクのボタン */
+  --btn-text: #fffefb;
+  --danger: #b3372e;
+  --success: #4a7c59;
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1420;
-    --card: #1a2233;
-    --text: #e8edf5;
-    --muted: #93a1b5;
-    --border: #2c374a;
-    --accent: #5b8def;
-    --accent-soft: #1e3a5f;
-    --danger: #f87171;
-    --success: #4ade80;
+    /* 夜のデスクライトの下の手帳 */
+    --bg: #1f1e1a;
+    --grid: #262520;
+    --grid2: #242320;
+    --card: #292822;
+    --text: #e8e5db;
+    --muted: #9a968a;
+    --border: #3a3830;
+    --accent: #e06a5d;
+    --accent-soft: #453029;
+    --btn: #e8e5db;
+    --btn-text: #23221e;
+    --danger: #e06a5d;
+    --success: #7dbb8f;
   }
 }
 
@@ -38,7 +53,10 @@ body {
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI',
     sans-serif;
-  background: var(--bg);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, var(--grid) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, var(--grid2) 23px 24px),
+    var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
@@ -58,21 +76,34 @@ body {
 }
 
 .app-header h1 {
-  font-size: 18px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
   margin: 0;
 }
+
+/* ---- ノートのページ(カード) ---- */
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 0 var(--border);
   padding: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .card h2 {
-  font-size: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
   margin: 0 0 10px;
+}
+
+.card h3 {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 6px;
 }
 
 .card-head {
@@ -85,11 +116,7 @@ body {
   margin-bottom: 10px;
 }
 
-.card h3 {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 12px 0 6px;
-}
+/* ---- 入力 ---- */
 
 label.field {
   display: block;
@@ -114,9 +141,16 @@ select {
   padding: 8px 10px;
   margin-top: 4px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border-radius: 6px;
+  background: var(--card);
   font-size: 16px; /* iOSのズーム防止 */
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* iOSのdate/timeはネイティブ描画のままだとCSSの幅指定を無視して
@@ -134,6 +168,14 @@ input::-webkit-date-and-time-value {
   text-align: left; /* iOSのデフォルト中央寄せを解除 */
 }
 
+.field-fixed-date {
+  flex: 0 0 152px;
+}
+
+.field-fixed-time {
+  flex: 0 0 110px;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap; /* 収まらない場合ははみ出さず折り返す */
@@ -145,30 +187,22 @@ input::-webkit-date-and-time-value {
   min-width: 0;
 }
 
-/* iOSのdate/timeピッカーは内部UIの最低幅を無視して描画がはみ出すため、
-   固定幅を確保して隣の項目だけを伸縮させる(:has()は非対応環境があるため
-   セレクタに頼らずクラスを明示する) */
-.field-fixed-date {
-  flex: 0 0 152px;
-}
-
-.field-fixed-time {
-  flex: 0 0 110px;
-}
+/* ---- ボタン: インクの押印 ---- */
 
 button {
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 9px 14px;
-  background: var(--accent);
-  color: #fff;
+  background: var(--btn);
+  color: var(--btn-text);
   font-weight: 600;
   cursor: pointer;
 }
 
 button.secondary {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 button.ghost {
@@ -184,9 +218,11 @@ button.danger {
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
+
+/* ---- 統計(手帳の枠) ---- */
 
 .stat-grid {
   display: grid;
@@ -195,8 +231,8 @@ button:disabled {
 }
 
 .stat {
-  background: var(--bg);
-  border-radius: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
   padding: 10px;
 }
 
@@ -208,6 +244,7 @@ button:disabled {
 .stat .value {
   font-size: 20px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   margin-top: 2px;
 }
 
@@ -216,6 +253,8 @@ button:disabled {
   font-weight: 500;
   color: var(--muted);
 }
+
+/* ---- 下部タブ: ノートの見出しタブ ---- */
 
 .tabbar {
   position: fixed;
@@ -227,7 +266,7 @@ button:disabled {
   gap: 4px;
   background: var(--card);
   border-top: 1px solid var(--border);
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  padding: 4px 8px calc(6px + env(safe-area-inset-bottom));
   z-index: 10;
 }
 
@@ -236,35 +275,33 @@ button:disabled {
   max-width: 200px;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
+  font-size: 13px;
+  padding: 12px 4px 10px;
+  border-radius: 0;
+  border-top: 2px solid transparent;
+  margin-top: -5px;
 }
 
 .tabbar button.active {
-  color: var(--accent);
+  color: var(--text);
+  font-weight: 700;
+  border-top-color: var(--accent);
 }
 
-.tabbar .icon {
-  font-size: 20px;
-  line-height: 1;
-}
+/* ---- 日付ナビ ---- */
 
 .date-nav {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .date-nav .title {
   flex: 1;
   text-align: center;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .date-nav button {
@@ -274,14 +311,17 @@ button:disabled {
   padding: 6px 12px;
 }
 
+/* ---- 記録行: 破線罫のノート行 ---- */
+
 .list-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--border);
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .list-item:last-child {
@@ -304,75 +344,80 @@ button:disabled {
   color: var(--muted);
 }
 
-.onboarding-dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 4px 0 14px;
-}
+/* ---- きょうのしおり(ストリーク+進捗リング) ---- */
 
-.onboarding-dots .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--border);
-}
-
-.onboarding-dots .dot.active {
-  background: var(--accent);
-}
-
-.onboarding-list {
-  margin: 0 0 14px;
-  padding-left: 4px;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.onboarding-guide-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.onboarding-guide-item .icon {
-  font-size: 24px;
-  line-height: 1.3;
-}
-
-.onboarding-guide-item strong {
-  font-size: 14px;
-}
-
-.onboarding-guide-item p {
-  margin: 2px 0 0;
-}
-
-.streak-row {
+.journal-hero {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.streak-emoji {
-  font-size: 28px;
-  line-height: 1;
+.ring {
+  width: 92px;
+  height: 92px;
+  flex: none;
 }
 
-.streak-count {
-  font-size: 16px;
+.journal-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.journal-hero-info .big {
+  font-size: 20px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
+
+.journal-hero-info .big small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stamp {
+  width: 62px;
+  height: 62px;
+  flex: none;
+  border: 2.5px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-8deg);
+  font-weight: 700;
+  line-height: 1.1;
+  opacity: 0.9;
+}
+
+.stamp b {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stamp span {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.journal-lines {
+  margin-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+/* ---- マイメニュー ---- */
 
 .menu-toggle {
-  display: block;
-  font-size: 12px;
+  display: inline-block;
+  font-size: 13px;
   font-weight: 600;
-  padding: 4px 0 10px;
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+  padding: 0 0 1px;
+  margin: 2px 0 12px;
 }
 
 .menu-toggle.active {
@@ -382,9 +427,9 @@ button:disabled {
 .menu-panel {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .chips {
@@ -419,11 +464,74 @@ button:disabled {
   font-size: 13px;
 }
 
+/* ---- オンボーディング ---- */
+
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0 14px;
+}
+
+.onboarding-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.onboarding-dots .dot.active {
+  background: var(--accent);
+}
+
+.onboarding-list {
+  margin: 0 0 14px;
+  padding-left: 4px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.onboarding-list li::before {
+  content: '✓ ';
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.onboarding-guide-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.onboarding-guide-item .tab-name {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-top: 1px;
+}
+
+.onboarding-guide-item strong {
+  font-size: 14px;
+}
+
+.onboarding-guide-item p {
+  margin: 2px 0 0;
+}
+
+/* ---- グラフまわり ---- */
+
 .chart-nav {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .chart-nav > button {
@@ -460,9 +568,9 @@ button:disabled {
 }
 
 .chart-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--btn);
+  border-color: var(--btn);
+  color: var(--btn-text);
 }
 
 .chart-block {
