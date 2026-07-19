@@ -29,7 +29,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   return (
     <div>
       <div className="app-header">
-        <h1>体重管理</h1>
+        <h1>WeightNote</h1>
       </div>
 
       <div className="onboarding-dots">
