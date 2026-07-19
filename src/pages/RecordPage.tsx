@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Food, type Profile } from '../db';
 import { StreakSummary } from '../components/StreakSummary';
+import { TodayPrescription } from '../components/TodayPrescription';
 import {
   ageAt,
   bmr,
@@ -20,6 +21,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
   return (
     <div>
       <StreakSummary profile={profile} />
+      <TodayPrescription profile={profile} />
 
       <div className="tip-card">
         <span className="tip-label">きょうのひとこと</span>

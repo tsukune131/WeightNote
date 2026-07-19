@@ -6,6 +6,7 @@ import {
   bmr,
   dailyDeficit,
   daysUntil,
+  kcalToSteps,
   requiredDailyKcal,
   stepsToKcal,
   tdee,
@@ -78,5 +79,16 @@ describe('stepsToKcal', () => {
   });
   it('0歩は0kcal', () => {
     expect(stepsToKcal(0, 70)).toBe(0);
+  });
+});
+
+describe('kcalToSteps', () => {
+  it('stepsToKcalの逆算になっている', () => {
+    const steps = kcalToSteps(stepsToKcal(10000, 70), 70);
+    expect(steps).toBeCloseTo(10000, 5);
+  });
+  it('0kcal以下は0歩', () => {
+    expect(kcalToSteps(0, 70)).toBe(0);
+    expect(kcalToSteps(-10, 70)).toBe(0);
   });
 });

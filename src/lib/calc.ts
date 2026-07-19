@@ -87,3 +87,12 @@ export function stepsToKcal(steps: number, weightKg: number): number {
   const hours = km / 4.8;
   return 3.0 * weightKg * hours * 1.05;
 }
+
+/** stepsToKcalの逆算。指定カロリー分を歩くのに必要な歩数 */
+export function kcalToSteps(kcal: number, weightKg: number): number {
+  if (kcal <= 0 || weightKg <= 0) return 0;
+  return kcal / ((0.0007 / 4.8) * 3.0 * weightKg * 1.05);
+}
+
+/** ご飯茶碗1杯(中盛り、白米150g)のおおよそのカロリー。食事量の目安換算に使う */
+export const RICE_BOWL_KCAL = 240;

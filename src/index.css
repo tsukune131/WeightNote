@@ -464,6 +464,34 @@ button:disabled {
   outline-offset: 1px;
 }
 
+/* ---- きょうの処方箋 ---- */
+
+.prescription-row {
+  display: flex;
+  gap: 10px;
+}
+
+.prescription-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.prescription-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.prescription-value {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- きょうのひとこと(余白のメモ) ---- */
 
 .tip-card {
