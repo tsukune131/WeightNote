@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Food, type MealSlot, type Profile } from '../db';
 import { MedicationManager } from '../components/MedicationManager';
@@ -68,6 +68,29 @@ function useEntry<T>(table: string, profileId: number, date: string): T | undefi
   );
 }
 
+/**
+ * 入力が変わったら少し待って(デバウンス)自動保存する。保存ボタンを不要にする。
+ * signature が変わるたびにタイマーをリセットするので、入力が止まってから保存される。
+ */
+function useAutosave(signature: string, dirty: boolean, save: () => Promise<void>) {
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => void saveRef.current(), 600);
+    return () => clearTimeout(t);
+  }, [signature, dirty]);
+}
+
+/** 自動保存の状態表示(保存ボタンの代わり) */
+function AutosaveNote({ dirty, saved }: { dirty: boolean; saved: boolean }) {
+  return (
+    <span className="muted" style={{ fontSize: 12, alignSelf: 'center' }}>
+      {dirty ? '自動保存します…' : saved ? '保存済み ✓' : ''}
+    </span>
+  );
+}
+
 /* ---------- 体重・体脂肪率・腹囲 ---------- */
 
 function BodyMetricsSection({ profileId, date }: { profileId: number; date: string }) {
@@ -80,7 +103,6 @@ function BodyMetricsSection({ profileId, date }: { profileId: number; date: stri
   const [kg, setKg] = useState('');
   const [fat, setFat] = useState('');
   const [waist, setWaist] = useState('');
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (weightEntry) {
@@ -94,6 +116,14 @@ function BodyMetricsSection({ profileId, date }: { profileId: number; date: stri
       setWaist(metricEntry.waist != null ? String(metricEntry.waist) : '');
     }
   }, [metricEntry?.id]);
+
+  const kgN = Number(kg) || 0;
+  const fatN = Number(fat) || 0;
+  const waistN = Number(waist) || 0;
+  const dirty =
+    kgN !== (weightEntry?.kg ?? 0) ||
+    fatN !== (weightEntry?.bodyFatPct ?? 0) ||
+    waistN !== (metricEntry?.waist ?? 0);
 
   async function save() {
     const v = Number(kg);
@@ -113,9 +143,9 @@ function BodyMetricsSection({ profileId, date }: { profileId: number; date: stri
 
     // 今日の体重を記録したら、2件目以降のリマインダー通知は不要なので取り消す
     if (date === todayStr()) await cancelTodaysConditionalWeightReminders();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
   }
+
+  useAutosave(`${kg}|${fat}|${waist}`, dirty, save);
 
   return (
     <div className="card">
@@ -157,13 +187,7 @@ function BodyMetricsSection({ profileId, date }: { profileId: number; date: stri
             onChange={(e) => setWaist(e.target.value)}
           />
         </label>
-        <button
-          onClick={() => void save()}
-          disabled={!(Number(kg) > 0) && !(Number(waist) > 0)}
-          style={{ flex: '0 0 auto' }}
-        >
-          {saved ? '保存済み✓' : '保存'}
-        </button>
+        <AutosaveNote dirty={dirty} saved={(weightEntry != null || metricEntry != null) && !dirty} />
       </div>
     </div>
   );
@@ -186,7 +210,6 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
   const [values, setValues] = useState<Record<string, string>>({});
   const [systolic, setSystolic] = useState('');
   const [diastolic, setDiastolic] = useState('');
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (entry) {
@@ -199,7 +222,14 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
   }, [entry?.id]);
 
   const activeFields = OPTIONAL_METRIC_FIELDS.filter(([, , , flag]) => profile[flag]);
-  if (!activeFields.length && !profile.trackBloodPressure) return null;
+
+  const dirty =
+    (Number(values.glucose) || 0) !== (entry?.glucose ?? 0) ||
+    (Number(systolic) || 0) !== (entry?.systolic ?? 0) ||
+    (Number(diastolic) || 0) !== (entry?.diastolic ?? 0);
+  const hasSaved =
+    entry != null &&
+    (entry.glucose != null || entry.systolic != null || entry.diastolic != null);
 
   async function save() {
     const data: Record<string, number | undefined> = {};
@@ -215,9 +245,11 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
     // waistは体重セクションが管理するフィールドなので、ここでは触らない
     if (entry) await db.healthMetrics.update(entry.id, data);
     else await db.healthMetrics.add({ profileId, date, ...data } as never);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
   }
+
+  useAutosave(`${values.glucose ?? ''}|${systolic}|${diastolic}`, dirty, save);
+
+  if (!activeFields.length && !profile.trackBloodPressure) return null;
 
   return (
     <div className="card">
@@ -259,7 +291,9 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
           </label>
         </div>
       )}
-      <button onClick={() => void save()}>{saved ? '保存済み✓' : '保存'}</button>
+      <div className="row" style={{ marginTop: 4 }}>
+        <AutosaveNote dirty={dirty} saved={hasSaved && !dirty} />
+      </div>
     </div>
   );
 }
@@ -298,7 +332,6 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     dinner: '',
     snack: '',
   });
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (entry) {
@@ -385,6 +418,13 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     return false;
   });
 
+  const dirty =
+    MEAL_FIELDS.some(([k]) => (Number(values[k]) || 0) !== (entry?.[k] ?? 0)) ||
+    (times.breakfast || '') !== (entry?.breakfastTime ?? '') ||
+    (times.lunch || '') !== (entry?.lunchTime ?? '') ||
+    (times.dinner || '') !== (entry?.dinnerTime ?? '') ||
+    (times.snack || '') !== (entry?.snackTime ?? '');
+
   async function save() {
     const data = {
       breakfast: Number(values.breakfast) || 0,
@@ -398,9 +438,9 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     };
     if (entry) await db.meals.update(entry.id, data);
     else await db.meals.add({ profileId, date, ...data } as never);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
   }
+
+  useAutosave(JSON.stringify({ values, times }), dirty, save);
 
   return (
     <div className="card">
@@ -559,9 +599,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
       })}
       <div className="row" style={{ alignItems: 'center' }}>
         <div className="muted">合計 {total.toLocaleString()} kcal</div>
-        <button onClick={() => void save()} style={{ flex: '0 0 auto' }}>
-          {saved ? '保存済み✓' : '保存'}
-        </button>
+        <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />
       </div>
     </div>
   );
@@ -655,7 +693,6 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
   const [total, setTotal] = useState('');
   const [hourly, setHourly] = useState<string[]>(Array(24).fill(''));
   const [showHourly, setShowHourly] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (entry) {
@@ -671,15 +708,20 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
   const hourlySum = hourlyNums.reduce((a, b) => a + b, 0);
   const hasHourly = hourlySum > 0;
 
+  const currentTotal = hasHourly ? hourlySum : Number(total) || 0;
+  const dirty =
+    currentTotal !== (entry?.total ?? 0) ||
+    (hasHourly && JSON.stringify(hourlyNums) !== JSON.stringify(entry?.hourly ?? []));
+
   async function save() {
     const t = hasHourly ? hourlySum : Number(total) || 0;
+    if (!(t > 0)) return; // 空(0歩)は保存しない
     const data = { total: t, hourly: hasHourly ? hourlyNums : undefined };
     if (entry) await db.steps.update(entry.id, data);
     else await db.steps.add({ profileId, date, ...data } as never);
-    setTotal(String(t));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
   }
+
+  useAutosave(`${total}|${hasHourly}|${hourly.join(',')}`, dirty, save);
 
   return (
     <div className="card">
@@ -699,9 +741,7 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
             onChange={(e) => setTotal(e.target.value)}
           />
         </label>
-        <button onClick={() => void save()} style={{ flex: '0 0 auto' }}>
-          {saved ? '保存済み✓' : '保存'}
-        </button>
+        <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />
       </div>
       <button
         className="ghost"
@@ -803,7 +843,6 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
 function NoteSection({ profileId, date }: { profileId: number; date: string }) {
   const entry = useEntry<{ id: number; text: string }>('notes', profileId, date);
   const [text, setText] = useState('');
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (entry) setText(entry.text);
@@ -815,13 +854,13 @@ function NoteSection({ profileId, date }: { profileId: number; date: string }) {
     const t = text.trim();
     if (entry) {
       if (t) await db.notes.update(entry.id, { text: t });
-      else await db.notes.delete(entry.id); // 空にして保存したら消す
+      else await db.notes.delete(entry.id); // 空にしたら消す
     } else if (t) {
       await db.notes.add({ profileId, date, text: t } as never);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
   }
+
+  useAutosave(text, dirty, save);
 
   return (
     <div className="card">
@@ -834,12 +873,7 @@ function NoteSection({ profileId, date }: { profileId: number; date: string }) {
         onChange={(e) => setText(e.target.value)}
       />
       <div className="row" style={{ marginTop: 8 }}>
-        <span className="muted" style={{ alignSelf: 'center' }}>
-          {entry != null && !dirty ? '書き込み済み' : ''}
-        </span>
-        <button onClick={() => void save()} disabled={!dirty} style={{ flex: '0 0 auto' }}>
-          {saved ? '保存済み✓' : '保存'}
-        </button>
+        <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />
       </div>
     </div>
   );
