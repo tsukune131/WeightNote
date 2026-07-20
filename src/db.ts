@@ -14,7 +14,7 @@ export interface Profile {
   targetDate?: string; // YYYY-MM-DD
   useMedication?: boolean; // 服薬管理を使うか
   // 任意の検査値記録。オンにしたものだけ「きょう」に入力欄が出る
-  trackWaist?: boolean;
+  // (腹囲はメタボ基準の必須項目のため常時表示。トグルなし)
   trackBloodPressure?: boolean;
   trackGlucose?: boolean;
   // リマインダー通知の設定(発火自体はネイティブアプリ化後に実装。設定のみ先行)

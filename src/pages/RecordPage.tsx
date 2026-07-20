@@ -137,10 +137,8 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
 
 /* ---------- 検査値 ---------- */
 
-const METRIC_FIELDS = [
-  ['waist', '腹囲', 'cm', 'trackWaist'],
-  ['glucose', '血糖値', 'mg/dL', 'trackGlucose'],
-] as const;
+// 腹囲はメタボ基準の必須項目のため常時表示。血糖値は任意
+const OPTIONAL_METRIC_FIELDS = [['glucose', '血糖値', 'mg/dL', 'trackGlucose']] as const;
 
 function HealthMetricsSection({ profile, date }: { profile: Profile; date: string }) {
   const profileId = profile.id;
@@ -168,12 +166,13 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
     }
   }, [entry?.id]);
 
-  const activeFields = METRIC_FIELDS.filter(([, , , flag]) => profile[flag]);
-  if (!activeFields.length && !profile.trackBloodPressure) return null;
+  const activeFields = OPTIONAL_METRIC_FIELDS.filter(([, , , flag]) => profile[flag]);
 
   async function save() {
     const data: Record<string, number | undefined> = {};
-    for (const [key] of METRIC_FIELDS) {
+    const w = Number(values.waist);
+    data.waist = w > 0 ? w : undefined;
+    for (const [key] of OPTIONAL_METRIC_FIELDS) {
       const v = Number(values[key]);
       data[key] = v > 0 ? v : undefined;
     }
@@ -191,6 +190,17 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
   return (
     <div className="card">
       <h2>検査値</h2>
+      <label className="field">
+        腹囲(cm)
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.1"
+          min="0"
+          value={values.waist ?? ''}
+          onChange={(e) => setValues((v) => ({ ...v, waist: e.target.value }))}
+        />
+      </label>
       {activeFields.map(([key, label, unit]) => (
         <label className="field" key={key}>
           {label}({unit})

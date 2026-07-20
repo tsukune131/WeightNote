@@ -6,6 +6,7 @@ import {
   bmr,
   dailyDeficit,
   daysUntil,
+  isMetaboWaist,
   kcalToSteps,
   requiredDailyKcal,
   stepsToKcal,
@@ -21,6 +22,17 @@ describe('bmi', () => {
     expect(bmiCategory(18)).toBe('低体重');
     expect(bmiCategory(22)).toBe('普通体重');
     expect(bmiCategory(27)).toBe('肥満(1度)');
+  });
+});
+
+describe('isMetaboWaist', () => {
+  it('男性は85cm以上で該当', () => {
+    expect(isMetaboWaist(85, 'male')).toBe(true);
+    expect(isMetaboWaist(84.9, 'male')).toBe(false);
+  });
+  it('女性は90cm以上で該当', () => {
+    expect(isMetaboWaist(90, 'female')).toBe(true);
+    expect(isMetaboWaist(89.9, 'female')).toBe(false);
   });
 });
 

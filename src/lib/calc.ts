@@ -25,6 +25,14 @@ export function bmiCategory(v: number): string {
   return '肥満(4度)';
 }
 
+/** メタボリックシンドロームの腹囲判定基準(日本内科学会等の基準。男性85cm/女性90cm以上で該当) */
+export const METABO_WAIST_THRESHOLD: Record<Sex, number> = { male: 85, female: 90 };
+
+/** 腹囲がメタボ基準に該当するか */
+export function isMetaboWaist(waistCm: number, sex: Sex): boolean {
+  return waistCm >= METABO_WAIST_THRESHOLD[sex];
+}
+
 export function ageAt(birthDate: string, on: Date = new Date()): number {
   const b = new Date(birthDate + 'T00:00:00');
   let age = on.getFullYear() - b.getFullYear();

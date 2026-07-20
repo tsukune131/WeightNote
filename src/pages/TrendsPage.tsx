@@ -35,6 +35,7 @@ import {
   bmr,
   dailyDeficit,
   daysUntil,
+  METABO_WAIST_THRESHOLD,
   requiredDailyKcal,
   stepsToKcal,
   totalKcalToGoal,
@@ -84,6 +85,7 @@ const CHART_TABS: { key: ChartKey; label: string }[] = [
   { key: 'water', label: '飲水' },
   { key: 'steps', label: '歩数' },
   { key: 'burn', label: '消費・貯金' },
+  { key: 'health', label: '検査値' },
 ];
 
 const MEAL_LABELS: Record<MealSlot, string> = {
@@ -118,9 +120,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       ?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   }, [chart]);
 
-  const hasHealthTracking =
-    profile.trackWaist || profile.trackBloodPressure || profile.trackGlucose;
-
   const bloodTests = useLiveQuery(
     async () => {
       const rows = await db.bloodTests.where('profileId').equals(profile.id).toArray();
@@ -143,7 +142,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
   const tabs = [
     ...CHART_TABS,
-    ...(hasHealthTracking ? [{ key: 'health' as ChartKey, label: '検査値' }] : []),
     ...(profile.useMedication ? [{ key: 'meds' as ChartKey, label: '服薬' }] : []),
     ...((bloodTests?.length ?? 0) > 0 ? [{ key: 'bloodtest' as ChartKey, label: '血液検査' }] : []),
   ];
@@ -677,8 +675,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               </div>
             </div>
           )}
-          {profile.trackWaist && rows.some((r) => r.waist != null) && (
-            <ChartCard title="腹囲" sub="単位: cm">
+          {rows.some((r) => r.waist != null) && (
+            <ChartCard
+              title="腹囲"
+              sub={`単位: cm(メタボ基準: ${profile.sex === 'male' ? METABO_WAIST_THRESHOLD.male : METABO_WAIST_THRESHOLD.female}cm以上)`}
+            >
               <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke={theme.grid} vertical={false} />
                 <XAxis {...xAxisProps(theme)} />
@@ -688,6 +689,12 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                   tickFormatter={(v: number) => v.toFixed(1)}
                 />
                 <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('cm')} labelFormatter={fmtDay} />
+                <ReferenceLine
+                  y={METABO_WAIST_THRESHOLD[profile.sex]}
+                  stroke={theme.reference}
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                />
                 <Line
                   type="monotone"
                   dataKey="waist"

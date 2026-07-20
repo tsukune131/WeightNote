@@ -11,6 +11,8 @@ import {
   bmiCategory,
   bmr,
   daysUntil,
+  isMetaboWaist,
+  METABO_WAIST_THRESHOLD,
   requiredDailyKcal,
   tdee,
   totalKcalToGoal,
@@ -38,9 +40,12 @@ export function YouPage({ profile }: { profile: Profile }) {
     async () => {
       const rows = await db.weights.where('profileId').equals(profile.id).toArray();
       rows.sort((a, b) => a.date.localeCompare(b.date));
+      const metrics = await db.healthMetrics.where('profileId').equals(profile.id).toArray();
+      metrics.sort((a, b) => a.date.localeCompare(b.date));
       return {
         weight: rows.at(-1),
         fatPct: rows.findLast((r) => r.bodyFatPct != null)?.bodyFatPct,
+        waist: metrics.findLast((m) => m.waist != null)?.waist,
       };
     },
     [profile.id],
@@ -115,6 +120,25 @@ export function YouPage({ profile }: { profile: Profile }) {
             <div className="value">
               {bmiValue != null ? bmiValue.toFixed(1) : '—'}
               {bmiValue != null && <small> {bmiCategory(bmiValue)}</small>}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="label">腹囲(最新の記録)</div>
+            <div className="value">
+              {latest?.waist != null ? (
+                <span
+                  style={{
+                    color: isMetaboWaist(latest.waist, profile.sex)
+                      ? 'var(--danger)'
+                      : 'inherit',
+                  }}
+                >
+                  {latest.waist.toFixed(1)}
+                  <small> cm</small>
+                </span>
+              ) : (
+                '未記録'
+              )}
             </div>
           </div>
           <div className="stat">
@@ -220,21 +244,29 @@ export function YouPage({ profile }: { profile: Profile }) {
         {hasGoal && remainDays === 0 && totalKcal != null && totalKcal > 0 && (
           <p className="muted">目標日を過ぎています。目標達成日を更新してください。</p>
         )}
+        <p className="muted" style={{ marginBottom: 0, marginTop: hasGoal ? 8 : 0 }}>
+          メタボリックシンドロームの腹囲基準: 男性 {METABO_WAIST_THRESHOLD.male}cm以上・
+          女性 {METABO_WAIST_THRESHOLD.female}cm以上が該当。
+          {latest?.waist != null &&
+            (isMetaboWaist(latest.waist, profile.sex)
+              ? ' 現在の記録は基準に該当しています。'
+              : ' 現在の記録は基準内です。')}
+        </p>
       </div>
 
       <div className="card">
         <h2>検査値の記録</h2>
         <p className="muted" style={{ marginTop: 0 }}>
-          オンにした項目だけ「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
+          腹囲は「きょう」タブで常に記録できます。以下はオンにした項目だけ
+          「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
         </p>
         <div className="row" style={{ flexWrap: 'wrap' }}>
           {(
             [
-              ['trackWaist', '腹囲'],
               ['trackBloodPressure', '血圧'],
               ['trackGlucose', '血糖値'],
             ] as const satisfies readonly (readonly [
-              'trackWaist' | 'trackBloodPressure' | 'trackGlucose',
+              'trackBloodPressure' | 'trackGlucose',
               string,
             ])[]
           ).map(([key, label]) => (
