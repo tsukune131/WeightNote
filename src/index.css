@@ -582,6 +582,16 @@ button:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/* 基準値の列を右端に固定表示 */
+.bloodtest-table th.bloodtest-ref,
+.bloodtest-table td.bloodtest-ref {
+  position: sticky;
+  right: 0;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  color: var(--muted);
+}
+
 /* ---- マイメニュー ---- */
 
 .menu-toggle {

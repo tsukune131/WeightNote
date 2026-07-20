@@ -152,16 +152,23 @@ export interface BloodTestEntry {
 type BloodTestMetricKey = keyof Omit<BloodTestEntry, 'id' | 'profileId' | 'date'>;
 
 /** 血液検査の項目一覧(あなたタブの入力フォーム・ふりかえりの表で共用) */
-export const BLOOD_TEST_FIELDS: { key: BloodTestMetricKey; label: string; unit: string }[] = [
-  { key: 'hba1c', label: 'HbA1c', unit: '%' },
-  { key: 'ldl', label: 'LDL', unit: 'mg/dL' },
-  { key: 'hdl', label: 'HDL', unit: 'mg/dL' },
-  { key: 'tg', label: '中性脂肪(TG)', unit: 'mg/dL' },
-  { key: 'ast', label: 'AST', unit: 'U/L' },
-  { key: 'alt', label: 'ALT', unit: 'U/L' },
-  { key: 'ggtp', label: 'γ-GTP', unit: 'U/L' },
-  { key: 'uricAcid', label: '尿酸', unit: 'mg/dL' },
-  { key: 'egfr', label: 'eGFR', unit: '' },
+// ref は日本人間ドック学会の基準範囲を目安として表示するもの。
+// 実際の基準値は検査施設・性別・年齢で異なるため、各自の結果表に従う旨を画面に併記する。
+export const BLOOD_TEST_FIELDS: {
+  key: BloodTestMetricKey;
+  label: string;
+  unit: string;
+  ref: string;
+}[] = [
+  { key: 'hba1c', label: 'HbA1c', unit: '%', ref: '5.5以下' },
+  { key: 'ldl', label: 'LDL', unit: 'mg/dL', ref: '60〜119' },
+  { key: 'hdl', label: 'HDL', unit: 'mg/dL', ref: '40以上' },
+  { key: 'tg', label: '中性脂肪(TG)', unit: 'mg/dL', ref: '30〜149' },
+  { key: 'ast', label: 'AST', unit: 'U/L', ref: '30以下' },
+  { key: 'alt', label: 'ALT', unit: 'U/L', ref: '30以下' },
+  { key: 'ggtp', label: 'γ-GTP', unit: 'U/L', ref: '50以下' },
+  { key: 'uricAcid', label: '尿酸', unit: 'mg/dL', ref: '7.0以下' },
+  { key: 'egfr', label: 'eGFR', unit: '', ref: '60以上' },
 ];
 
 export interface Setting {

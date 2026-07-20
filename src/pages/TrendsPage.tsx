@@ -417,6 +417,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                       {tests.map((t) => (
                         <th key={t.id}>{formatDateShort(t.date)}</th>
                       ))}
+                      <th className="bloodtest-ref">基準値</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -429,11 +430,16 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                         {tests.map((t) => (
                           <td key={t.id}>{t[f.key] ?? '—'}</td>
                         ))}
+                        <td className="bloodtest-ref">{f.ref}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>
+                基準値は日本人間ドック学会の基準範囲の目安です。実際の基準値は検査施設・性別・年齢で
+                異なるため、お手元の検査結果表の基準値をご確認ください。
+              </p>
             </div>
           ))
         ))}
