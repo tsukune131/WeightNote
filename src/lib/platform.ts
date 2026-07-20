@@ -75,10 +75,11 @@ export async function cancelTodaysConditionalWeightReminders(): Promise<void> {
 }
 
 /**
- * 腹囲記録の月次リマインダー通知を設定する(ネイティブのみ、毎月dayOfMonth日の朝9時)。
+ * 腹囲記録の週次リマインダー通知を設定する(ネイティブのみ、指定曜日の朝9時)。
+ * weekdayは0(日)〜6(土)。Capacitor/iOSのweekday表現(1=日〜7=土)に+1して渡す。
  * フェーズCで実機確認する。
  */
-export async function scheduleWaistReminder(dayOfMonth: number): Promise<boolean> {
+export async function scheduleWaistReminder(weekday: number): Promise<boolean> {
   if (!isNativeApp()) return false;
   const { LocalNotifications } = await import('@capacitor/local-notifications');
   const perm = await LocalNotifications.requestPermissions();
@@ -89,7 +90,7 @@ export async function scheduleWaistReminder(dayOfMonth: number): Promise<boolean
         id: WAIST_NOTIFICATION_ID,
         title: 'VitaNote',
         body: '腹囲を記録しましょう',
-        schedule: { on: { day: dayOfMonth, hour: 9, minute: 0 }, allowWhileIdle: true },
+        schedule: { on: { weekday: weekday + 1, hour: 9, minute: 0 }, allowWhileIdle: true },
       },
     ],
   });

@@ -11,6 +11,7 @@ export interface Profile {
   activityLevel: number;
   targetWeightKg?: number;
   targetFatPct?: number; // 目標体脂肪率(%)
+  targetWaistCm?: number; // 目標腹囲(cm)
   targetDate?: string; // YYYY-MM-DD
   useMedication?: boolean; // 服薬管理を使うか
   // 任意の検査値記録。オンにしたものだけ「きょう」に入力欄が出る
@@ -21,11 +22,11 @@ export interface Profile {
   notifyWeight?: boolean;
   notifyWeightTimes?: string[]; // HH:mmの配列。デフォルト ['07:00', '20:00']
   notifyWaist?: boolean;
-  notifyWaistDay?: number; // 毎月の通知日(1〜28)。デフォルト1
+  notifyWaistWeekday?: number; // 週次通知の曜日(0=日〜6=土)。デフォルト1(月)
 }
 
 export const DEFAULT_WEIGHT_NOTIFY_TIMES = ['07:00', '20:00'];
-export const DEFAULT_WAIST_NOTIFY_DAY = 1;
+export const DEFAULT_WAIST_NOTIFY_WEEKDAY = 1;
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type MedicationTiming = 'before' | 'after';

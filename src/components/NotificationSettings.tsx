@@ -1,7 +1,13 @@
-import { db, DEFAULT_WAIST_NOTIFY_DAY, DEFAULT_WEIGHT_NOTIFY_TIMES, type Profile } from '../db';
+import {
+  db,
+  DEFAULT_WAIST_NOTIFY_WEEKDAY,
+  DEFAULT_WEIGHT_NOTIFY_TIMES,
+  type Profile,
+} from '../db';
+import { WEEKDAY_LABELS } from '../lib/date';
 
 /**
- * リマインダー通知の設定(体重の時刻・腹囲の毎月の日)。
+ * リマインダー通知の設定(体重の時刻・腹囲の週次曜日)。
  * 実際の通知発火はネイティブアプリ化(フェーズC)後に対応する。
  * ここでは設定値の保存のみを行う(src/lib/platform.tsに発火用の関数を用意済み)。
  */
@@ -9,7 +15,7 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
   const weightOn = profile.notifyWeight ?? false;
   const weightTimes = profile.notifyWeightTimes ?? DEFAULT_WEIGHT_NOTIFY_TIMES;
   const waistOn = profile.notifyWaist ?? false;
-  const waistDay = profile.notifyWaistDay ?? DEFAULT_WAIST_NOTIFY_DAY;
+  const waistWeekday = profile.notifyWaistWeekday ?? DEFAULT_WAIST_NOTIFY_WEEKDAY;
 
   async function toggleWeight(checked: boolean) {
     await db.profiles.update(profile.id, {
@@ -37,7 +43,7 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
   async function toggleWaist(checked: boolean) {
     await db.profiles.update(profile.id, {
       notifyWaist: checked,
-      notifyWaistDay: profile.notifyWaistDay ?? DEFAULT_WAIST_NOTIFY_DAY,
+      notifyWaistWeekday: profile.notifyWaistWeekday ?? DEFAULT_WAIST_NOTIFY_WEEKDAY,
     });
   }
 
@@ -98,20 +104,22 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
           checked={waistOn}
           onChange={(e) => void toggleWaist(e.target.checked)}
         />
-        腹囲の記録を知らせる(毎月)
+        腹囲の記録を知らせる(週1回)
       </label>
       {waistOn && (
         <label className="field" style={{ marginTop: 8, marginBottom: 0 }}>
-          通知日
+          通知曜日
           <select
-            value={waistDay}
+            value={waistWeekday}
             onChange={(e) =>
-              void db.profiles.update(profile.id, { notifyWaistDay: Number(e.target.value) })
+              void db.profiles.update(profile.id, {
+                notifyWaistWeekday: Number(e.target.value),
+              })
             }
           >
-            {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-              <option key={d} value={d}>
-                毎月{d}日
+            {WEEKDAY_LABELS.map((label, i) => (
+              <option key={i} value={i}>
+                毎週{label}曜日
               </option>
             ))}
           </select>

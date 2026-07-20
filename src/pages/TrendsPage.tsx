@@ -77,15 +77,13 @@ interface DayRow {
   diastolic?: number;
 }
 
-type ChartKey = 'weight' | 'intake' | 'water' | 'steps' | 'burn' | 'meds' | 'health' | 'bloodtest';
+type ChartKey = 'weight' | 'intake' | 'steps' | 'burn' | 'meds' | 'health' | 'bloodtest';
 
 const CHART_TABS: { key: ChartKey; label: string }[] = [
-  { key: 'weight', label: '体重・体脂肪率' },
-  { key: 'intake', label: '摂取カロリー' },
-  { key: 'water', label: '飲水' },
+  { key: 'weight', label: '体重・体脂肪率・腹囲' },
+  { key: 'intake', label: '摂取カロリー・飲水' },
   { key: 'steps', label: '歩数' },
   { key: 'burn', label: '消費・貯金' },
-  { key: 'health', label: '検査値' },
 ];
 
 const MEAL_LABELS: Record<MealSlot, string> = {
@@ -140,8 +138,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     return [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [bloodTests]);
 
+  const hasOptionalHealthTracking = profile.trackBloodPressure || profile.trackGlucose;
+
   const tabs = [
     ...CHART_TABS,
+    ...(hasOptionalHealthTracking ? [{ key: 'health' as ChartKey, label: '検査値' }] : []),
     ...(profile.useMedication ? [{ key: 'meds' as ChartKey, label: '服薬' }] : []),
     ...((bloodTests?.length ?? 0) > 0 ? [{ key: 'bloodtest' as ChartKey, label: '血液検査' }] : []),
   ];
@@ -523,6 +524,55 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         </ChartCard>
       )}
 
+      {chart === 'weight' && !rows.some((r) => r.waist != null) && (
+        <div className="card">
+          <div className="empty-note">
+            この月の腹囲の記録がまだありません。「きょう」タブで体重と一緒に入力できます。
+          </div>
+        </div>
+      )}
+      {chart === 'weight' && rows.some((r) => r.waist != null) && (
+        <ChartCard
+          title="腹囲"
+          sub={`単位: cm・点線 = メタボ基準 ${METABO_WAIST_THRESHOLD[profile.sex]}cm${profile.targetWaistCm != null ? ` / 目標 ${profile.targetWaistCm}cm` : ''}`}
+        >
+          <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+            <CartesianGrid stroke={theme.grid} vertical={false} />
+            <XAxis {...xAxisProps(theme)} />
+            <YAxis
+              {...yAxisProps(theme)}
+              domain={['dataMin - 1', 'dataMax + 1']}
+              tickFormatter={(v: number) => v.toFixed(1)}
+            />
+            <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('cm')} labelFormatter={fmtDay} />
+            <ReferenceLine
+              y={METABO_WAIST_THRESHOLD[profile.sex]}
+              stroke={theme.reference}
+              strokeDasharray="4 4"
+              ifOverflow="extendDomain"
+            />
+            {profile.targetWaistCm != null && (
+              <ReferenceLine
+                y={profile.targetWaistCm}
+                stroke={theme.divergePos}
+                strokeDasharray="2 2"
+                ifOverflow="extendDomain"
+              />
+            )}
+            <Line
+              type="monotone"
+              dataKey="waist"
+              name="腹囲"
+              stroke={theme.weight}
+              strokeWidth={2}
+              dot={{ r: 2, fill: theme.weight, strokeWidth: 0 }}
+              activeDot={{ r: 4 }}
+              connectNulls
+            />
+          </LineChart>
+        </ChartCard>
+      )}
+
       {chart === 'intake' && (
       <ChartCard title="摂取カロリー" sub="朝・昼・夕・間食の1日合計(ツールチップに食事時刻を表示)">
         <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -539,7 +589,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       </ChartCard>
       )}
 
-      {chart === 'water' && (
+      {chart === 'intake' && (
       <ChartCard title="飲水量">
         <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} onClick={barClickHandler(setWaterDate)}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
@@ -551,7 +601,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       </ChartCard>
       )}
 
-      {chart === 'water' && selectedWaterRow && selectedWaterLogs.length > 0 && (
+      {chart === 'intake' && selectedWaterRow && selectedWaterLogs.length > 0 && (
         <ChartCard title={`${selectedWaterRow.d}日の飲水(累積)`} sub={`合計 ${selectedWaterRow.water.toLocaleString()}ml`}>
           <LineChart
             data={selectedWaterLogs.reduce<{ time: string; sum: number }[]>((acc, l) => {
@@ -664,9 +714,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
       {chart === 'health' && (
         <>
-          {!rows.some(
-            (r) => r.waist != null || r.glucose != null || r.systolic != null,
-          ) && (
+          {!rows.some((r) => r.glucose != null || r.systolic != null) && (
             <div className="card">
               <div className="empty-note">
                 この月の検査値の記録がまだありません。
@@ -674,39 +722,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                 「きょう」タブから入力できます。
               </div>
             </div>
-          )}
-          {rows.some((r) => r.waist != null) && (
-            <ChartCard
-              title="腹囲"
-              sub={`単位: cm(メタボ基準: ${profile.sex === 'male' ? METABO_WAIST_THRESHOLD.male : METABO_WAIST_THRESHOLD.female}cm以上)`}
-            >
-              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke={theme.grid} vertical={false} />
-                <XAxis {...xAxisProps(theme)} />
-                <YAxis
-                  {...yAxisProps(theme)}
-                  domain={['dataMin - 1', 'dataMax + 1']}
-                  tickFormatter={(v: number) => v.toFixed(1)}
-                />
-                <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('cm')} labelFormatter={fmtDay} />
-                <ReferenceLine
-                  y={METABO_WAIST_THRESHOLD[profile.sex]}
-                  stroke={theme.reference}
-                  strokeDasharray="4 4"
-                  ifOverflow="extendDomain"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="waist"
-                  name="腹囲"
-                  stroke={theme.weight}
-                  strokeWidth={2}
-                  dot={{ r: 2, fill: theme.weight, strokeWidth: 0 }}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ChartCard>
           )}
           {profile.trackGlucose && rows.some((r) => r.glucose != null) && (
             <ChartCard title="血糖値" sub="単位: mg/dL">

@@ -49,7 +49,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
         </button>
       </div>
 
-      <WeightSection key={`w-${profile.id}-${date}`} profileId={profile.id} date={date} />
+      <BodyMetricsSection key={`w-${profile.id}-${date}`} profileId={profile.id} date={date} />
       <HealthMetricsSection key={`h-${profile.id}-${date}`} profile={profile} date={date} />
       <MealSection key={`m-${profile.id}-${date}`} profile={profile} date={date} />
       <WaterSection profileId={profile.id} date={date} />
@@ -68,32 +68,49 @@ function useEntry<T>(table: string, profileId: number, date: string): T | undefi
   );
 }
 
-/* ---------- 体重 ---------- */
+/* ---------- 体重・体脂肪率・腹囲 ---------- */
 
-function WeightSection({ profileId, date }: { profileId: number; date: string }) {
-  const entry = useEntry<{ id: number; kg: number; bodyFatPct?: number }>(
+function BodyMetricsSection({ profileId, date }: { profileId: number; date: string }) {
+  const weightEntry = useEntry<{ id: number; kg: number; bodyFatPct?: number }>(
     'weights',
     profileId,
     date,
   );
+  const metricEntry = useEntry<{ id: number; waist?: number }>('healthMetrics', profileId, date);
   const [kg, setKg] = useState('');
   const [fat, setFat] = useState('');
+  const [waist, setWaist] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (entry) {
-      setKg(String(entry.kg));
-      setFat(entry.bodyFatPct != null ? String(entry.bodyFatPct) : '');
+    if (weightEntry) {
+      setKg(String(weightEntry.kg));
+      setFat(weightEntry.bodyFatPct != null ? String(weightEntry.bodyFatPct) : '');
     }
-  }, [entry?.id]);
+  }, [weightEntry?.id]);
+
+  useEffect(() => {
+    if (metricEntry) {
+      setWaist(metricEntry.waist != null ? String(metricEntry.waist) : '');
+    }
+  }, [metricEntry?.id]);
 
   async function save() {
     const v = Number(kg);
-    if (!(v > 0)) return;
-    const f = Number(fat);
-    const data = { kg: v, bodyFatPct: f > 0 ? f : undefined };
-    if (entry) await db.weights.update(entry.id, data);
-    else await db.weights.add({ profileId, date, ...data } as never);
+    const w = Number(waist);
+    if (!(v > 0) && !(w > 0)) return; // 体重・腹囲のどちらか一方だけの入力でも保存できる
+
+    if (v > 0) {
+      const f = Number(fat);
+      const data = { kg: v, bodyFatPct: f > 0 ? f : undefined };
+      if (weightEntry) await db.weights.update(weightEntry.id, data);
+      else await db.weights.add({ profileId, date, ...data } as never);
+    }
+
+    const waistData = { waist: w > 0 ? w : undefined };
+    if (metricEntry) await db.healthMetrics.update(metricEntry.id, waistData);
+    else if (w > 0) await db.healthMetrics.add({ profileId, date, ...waistData } as never);
+
     // 今日の体重を記録したら、2件目以降のリマインダー通知は不要なので取り消す
     if (date === todayStr()) await cancelTodaysConditionalWeightReminders();
     setSaved(true);
@@ -102,7 +119,7 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
 
   return (
     <div className="card">
-      <h2>体重・体脂肪率</h2>
+      <h2>体重・体脂肪率・腹囲</h2>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="field" style={{ marginBottom: 0 }}>
           体重(kg)
@@ -127,7 +144,24 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
             onChange={(e) => setFat(e.target.value)}
           />
         </label>
-        <button onClick={() => void save()} disabled={!(Number(kg) > 0)} style={{ flex: '0 0 auto' }}>
+      </div>
+      <div className="row" style={{ alignItems: 'flex-end' }}>
+        <label className="field" style={{ marginBottom: 0 }}>
+          腹囲(cm)
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min="0"
+            value={waist}
+            onChange={(e) => setWaist(e.target.value)}
+          />
+        </label>
+        <button
+          onClick={() => void save()}
+          disabled={!(Number(kg) > 0) && !(Number(waist) > 0)}
+          style={{ flex: '0 0 auto' }}
+        >
           {saved ? '保存済み✓' : '保存'}
         </button>
       </div>
@@ -135,9 +169,8 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
   );
 }
 
-/* ---------- 検査値 ---------- */
+/* ---------- 血圧・血糖値(任意) ---------- */
 
-// 腹囲はメタボ基準の必須項目のため常時表示。血糖値は任意
 const OPTIONAL_METRIC_FIELDS = [['glucose', '血糖値', 'mg/dL', 'trackGlucose']] as const;
 
 function HealthMetricsSection({ profile, date }: { profile: Profile; date: string }) {
@@ -158,7 +191,6 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
   useEffect(() => {
     if (entry) {
       setValues({
-        waist: entry.waist != null ? String(entry.waist) : '',
         glucose: entry.glucose != null ? String(entry.glucose) : '',
       });
       setSystolic(entry.systolic != null ? String(entry.systolic) : '');
@@ -167,11 +199,10 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
   }, [entry?.id]);
 
   const activeFields = OPTIONAL_METRIC_FIELDS.filter(([, , , flag]) => profile[flag]);
+  if (!activeFields.length && !profile.trackBloodPressure) return null;
 
   async function save() {
     const data: Record<string, number | undefined> = {};
-    const w = Number(values.waist);
-    data.waist = w > 0 ? w : undefined;
     for (const [key] of OPTIONAL_METRIC_FIELDS) {
       const v = Number(values[key]);
       data[key] = v > 0 ? v : undefined;
@@ -181,6 +212,7 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
     data.systolic = sys > 0 ? sys : undefined;
     data.diastolic = dia > 0 ? dia : undefined;
 
+    // waistは体重セクションが管理するフィールドなので、ここでは触らない
     if (entry) await db.healthMetrics.update(entry.id, data);
     else await db.healthMetrics.add({ profileId, date, ...data } as never);
     setSaved(true);
@@ -189,18 +221,7 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
 
   return (
     <div className="card">
-      <h2>検査値</h2>
-      <label className="field">
-        腹囲(cm)
-        <input
-          type="number"
-          inputMode="decimal"
-          step="0.1"
-          min="0"
-          value={values.waist ?? ''}
-          onChange={(e) => setValues((v) => ({ ...v, waist: e.target.value }))}
-        />
-      </label>
+      <h2>血圧・血糖値</h2>
       {activeFields.map(([key, label, unit]) => (
         <label className="field" key={key}>
           {label}({unit})

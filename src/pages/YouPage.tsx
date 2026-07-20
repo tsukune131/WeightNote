@@ -26,15 +26,25 @@ export function YouPage({ profile }: { profile: Profile }) {
   const [targetFat, setTargetFat] = useState(
     profile.targetFatPct != null ? String(profile.targetFatPct) : '',
   );
+  const [targetWaist, setTargetWaist] = useState(
+    profile.targetWaistCm != null ? String(profile.targetWaistCm) : '',
+  );
   const [targetDate, setTargetDate] = useState(profile.targetDate ?? '');
 
   // プロフィール切替時にフォームを同期
   useEffect(() => {
     setTargetWeight(profile.targetWeightKg != null ? String(profile.targetWeightKg) : '');
     setTargetFat(profile.targetFatPct != null ? String(profile.targetFatPct) : '');
+    setTargetWaist(profile.targetWaistCm != null ? String(profile.targetWaistCm) : '');
     setTargetDate(profile.targetDate ?? '');
     setEditing(false);
-  }, [profile.id, profile.targetWeightKg, profile.targetFatPct, profile.targetDate]);
+  }, [
+    profile.id,
+    profile.targetWeightKg,
+    profile.targetFatPct,
+    profile.targetWaistCm,
+    profile.targetDate,
+  ]);
 
   const latest = useLiveQuery(
     async () => {
@@ -72,9 +82,11 @@ export function YouPage({ profile }: { profile: Profile }) {
 
   async function saveGoal() {
     const fat = Number(targetFat);
+    const waist = Number(targetWaist);
     await db.profiles.update(profile.id, {
       targetWeightKg: targetKg > 0 ? targetKg : undefined,
       targetFatPct: fat > 0 ? fat : undefined,
+      targetWaistCm: waist > 0 ? waist : undefined,
       targetDate: targetDate || undefined,
     });
   }
@@ -183,6 +195,17 @@ export function YouPage({ profile }: { profile: Profile }) {
               onChange={(e) => setTargetFat(e.target.value)}
             />
           </label>
+          <label className="field">
+            目標腹囲(cm)
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="1"
+              value={targetWaist}
+              onChange={(e) => setTargetWaist(e.target.value)}
+            />
+          </label>
           <label className="field field-fixed-date">
             目標達成日
             <input
@@ -209,6 +232,15 @@ export function YouPage({ profile }: { profile: Profile }) {
                 <div className="value">
                   {(latest.fatPct - Number(targetFat)).toFixed(1)}
                   <small> %</small>
+                </div>
+              </div>
+            )}
+            {latest?.waist != null && Number(targetWaist) > 0 && (
+              <div className="stat">
+                <div className="label">目標までの腹囲差</div>
+                <div className="value">
+                  {(latest.waist - Number(targetWaist)).toFixed(1)}
+                  <small> cm</small>
                 </div>
               </div>
             )}
@@ -257,8 +289,7 @@ export function YouPage({ profile }: { profile: Profile }) {
       <div className="card">
         <h2>検査値の記録</h2>
         <p className="muted" style={{ marginTop: 0 }}>
-          腹囲は「きょう」タブで常に記録できます。以下はオンにした項目だけ
-          「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
+          オンにした項目だけ「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
         </p>
         <div className="row" style={{ flexWrap: 'wrap' }}>
           {(
