@@ -84,7 +84,7 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
       )}
 
       {view.kind === 'achieved' && (
-        <p style={{ margin: 0 }}>きょうの目標を達成しました。よくやりました。</p>
+        <p style={{ margin: 0 }}>きょうの目標を達成しました。よく頑張りましたね！</p>
       )}
 
       {view.kind === 'over' && (
@@ -93,7 +93,9 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
             きょうは <strong>{kcal(view.over)} オーバー</strong>でした。
           </p>
           <p className="muted" style={{ margin: 0 }}>
-            夜に取り返すのは大変なので、あすの処方箋で調整しましょう。
+            夜に取り返すのは大変なので、明日の活動で調整しましょう。
+            <br />
+            歩数では🚶 {stepsFor(view.over)}歩 頑張って歩きましょう。
           </p>
         </>
       )}
