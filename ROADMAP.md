@@ -46,7 +46,12 @@
    「あなた」タブに追加。実際の発火はPWAでは不安定なため、フェーズCの
    ネイティブ化(Capacitor `@capacitor/local-notifications`)まで待つ方針。
    発火用のヘルパー(scheduleWeightReminders/scheduleWaistReminder)は
-   src/lib/platform.tsに用意済み、フェーズCで呼び出しを配線するだけの状態
+   src/lib/platform.tsに用意済み、フェーズCで呼び出しを配線するだけの状態。
+   仕様(2026-07-20追加): 体重通知の1件目は必ず届く(毎日繰り返し)。
+   2件目以降は「その日の体重が未入力なら届く」条件付きにする。OSの繰り返し
+   通知には条件判定がないため、フェーズCでは2件目以降を「当日ぶんの単発通知」
+   として日々補充する設計が必要(TODOとしてplatform.tsに明記済み)。
+   体重保存時にcancelTodaysConditionalWeightReminders()を呼ぶ配線は実装済み
 
 **収益モデル: 基本無料+買い切り¥480「WeightNote Pro」**
 - 無料: 手入力の全機能(記録・グラフ・日記・貯金)

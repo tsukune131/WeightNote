@@ -22,6 +22,7 @@ import {
   todayStr,
   weekdayOf,
 } from '../lib/date';
+import { cancelTodaysConditionalWeightReminders } from '../lib/platform';
 import { tipForDate } from '../lib/tips';
 
 export function RecordPage({ profile }: { profile: Profile }) {
@@ -93,6 +94,8 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
     const data = { kg: v, bodyFatPct: f > 0 ? f : undefined };
     if (entry) await db.weights.update(entry.id, data);
     else await db.weights.add({ profileId, date, ...data } as never);
+    // 今日の体重を記録したら、2件目以降のリマインダー通知は不要なので取り消す
+    if (date === todayStr()) await cancelTodaysConditionalWeightReminders();
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   }

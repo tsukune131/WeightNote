@@ -59,23 +59,30 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
       {weightOn && (
         <div style={{ marginBottom: 12 }}>
           {weightTimes.map((t, i) => (
-            <div className="row" key={i} style={{ alignItems: 'flex-end', marginBottom: 6 }}>
-              <label className="field field-fixed-time" style={{ marginBottom: 0 }}>
-                通知時刻
-                <input
-                  type="time"
-                  value={t}
-                  onChange={(e) => void updateWeightTime(i, e.target.value)}
-                />
-              </label>
-              {weightTimes.length > 1 && (
-                <button
-                  className="ghost"
-                  onClick={() => void removeWeightTime(i)}
-                  style={{ flex: '0 0 auto' }}
-                >
-                  削除
-                </button>
+            <div key={i}>
+              <div className="row" style={{ alignItems: 'flex-end', marginBottom: 2 }}>
+                <label className="field field-fixed-time" style={{ marginBottom: 0 }}>
+                  {i === 0 ? '1件目(必ず届く)' : `${i + 1}件目`}
+                  <input
+                    type="time"
+                    value={t}
+                    onChange={(e) => void updateWeightTime(i, e.target.value)}
+                  />
+                </label>
+                {weightTimes.length > 1 && (
+                  <button
+                    className="ghost"
+                    onClick={() => void removeWeightTime(i)}
+                    style={{ flex: '0 0 auto' }}
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
+              {i > 0 && (
+                <p className="muted" style={{ margin: '0 0 8px' }}>
+                  その日の体重を入力済みなら届きません
+                </p>
               )}
             </div>
           ))}

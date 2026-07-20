@@ -16,38 +16,62 @@ export async function fetchNativeSteps(_date: string): Promise<number | undefine
   return undefined;
 }
 
-const WEIGHT_NOTIFICATION_IDS = Array.from({ length: 10 }, (_, i) => ({ id: 100 + i }));
+/** 1件目(必ず届く)固定ID */
+const WEIGHT_MANDATORY_ID = 100;
+/** 2件目以降(その日の体重が未入力なら届く)用に予約したID */
+const WEIGHT_CONDITIONAL_IDS = Array.from({ length: 9 }, (_, i) => ({ id: 101 + i }));
+const ALL_WEIGHT_IDS = [{ id: WEIGHT_MANDATORY_ID }, ...WEIGHT_CONDITIONAL_IDS];
 const WAIST_NOTIFICATION_ID = 200;
 
 /**
- * 体重記録のリマインダー通知を設定する(ネイティブのみ)。時刻は複数指定できる
- * (Profile.notifyWeightTimesの値をそのまま渡す想定)。フェーズCで実機確認する。
+ * 体重記録のリマインダー通知を設定する(ネイティブのみ)。
+ * 仕様: times[0]は毎日必ず届く(OSの繰り返し通知で実装)。
+ * times[1]以降は「その日の体重が未入力なら届く」条件付きにしたいが、
+ * OSの繰り返し通知には条件判定がないため、フェーズCでは
+ * 「当日ぶんの単発通知」を毎日(アプリ起動時など)補充する設計が必要になる。
+ * 体重を保存した日は cancelTodaysConditionalWeightReminders() を呼んで
+ * その日の2件目以降を取り消す。
+ *
+ * 現時点ではtimes[0]の繰り返し通知のみ実装済み。times[1]以降の単発補充は
+ * フェーズCのTODO(実機がないと補充タイミングの検証ができないため)。
  */
 export async function scheduleWeightReminders(times: string[]): Promise<boolean> {
-  if (!isNativeApp()) return false;
+  if (!isNativeApp() || times.length === 0) return false;
   const { LocalNotifications } = await import('@capacitor/local-notifications');
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return false;
-  await LocalNotifications.cancel({ notifications: WEIGHT_NOTIFICATION_IDS });
+  await LocalNotifications.cancel({ notifications: ALL_WEIGHT_IDS });
+  const [hour, minute] = times[0].split(':').map(Number);
   await LocalNotifications.schedule({
-    notifications: times.map((t, i) => {
-      const [hour, minute] = t.split(':').map(Number);
-      return {
-        id: 100 + i,
+    notifications: [
+      {
+        id: WEIGHT_MANDATORY_ID,
         title: 'WeightNote',
         body: 'きょうの体重を書き込みましょう',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
-      };
-    }),
+      },
+    ],
   });
+  // TODO(フェーズC): times[1]以降を「当日ぶんの単発通知」として日々補充する
   return true;
 }
 
-/** 体重リマインダーを解除する */
+/** 体重リマインダーを解除する(1件目・2件目以降とも) */
 export async function cancelWeightReminders(): Promise<void> {
   if (!isNativeApp()) return;
   const { LocalNotifications } = await import('@capacitor/local-notifications');
-  await LocalNotifications.cancel({ notifications: WEIGHT_NOTIFICATION_IDS });
+  await LocalNotifications.cancel({ notifications: ALL_WEIGHT_IDS });
+}
+
+/**
+ * その日の体重を保存したときに呼ぶ。2件目以降(条件付き)のリマインダーのうち
+ * 当日ぶんを取り消す。フェーズCで単発通知の補充を実装した後、
+ * 「当日ぶんのIDだけ」を取り消すよう調整する(今は予約枠を丸ごと取り消す簡易実装)。
+ */
+export async function cancelTodaysConditionalWeightReminders(): Promise<void> {
+  if (!isNativeApp()) return;
+  const { LocalNotifications } = await import('@capacitor/local-notifications');
+  await LocalNotifications.cancel({ notifications: WEIGHT_CONDITIONAL_IDS });
 }
 
 /**
