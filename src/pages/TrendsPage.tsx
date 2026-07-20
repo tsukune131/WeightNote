@@ -107,7 +107,6 @@ function isDueOn(m: Medication, date: string): boolean {
 export function TrendsPage({ profile }: { profile: Profile }) {
   const [month, setMonth] = useState(() => toMonthStr(new Date()));
   const [chart, setChart] = useState<ChartKey>('weight');
-  const [waterDate, setWaterDate] = useState<string | undefined>();
   const [stepsDate, setStepsDate] = useState<string | undefined>();
   const theme = useChartTheme();
 
@@ -337,28 +336,19 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     );
 
   // タップがなければ、その月で記録がある最新の日をデフォルト表示する
-  const defaultWaterDate = (raw?.waterLogs ?? [])
-    .map((x) => x.date)
-    .sort()
-    .at(-1);
   const defaultStepsDate = (raw?.steps ?? [])
     .filter((x) => x.hourly?.some((v) => v > 0))
     .map((x) => x.date)
     .sort()
     .at(-1);
-  const effWaterDate = waterDate ?? defaultWaterDate;
   const effStepsDate = stepsDate ?? defaultStepsDate;
 
-  const selectedWaterRow = effWaterDate ? rows.find((r) => r.date === effWaterDate) : undefined;
   const selectedStepsRow = effStepsDate ? rows.find((r) => r.date === effStepsDate) : undefined;
   const selectedStepEntry = raw?.steps.find((x) => x.date === effStepsDate);
   const selectedHourly =
     selectedStepEntry?.hourly && selectedStepEntry.hourly.some((v) => v > 0)
       ? selectedStepEntry.hourly
       : undefined;
-  const selectedWaterLogs = (raw?.waterLogs ?? [])
-    .filter((x) => x.date === effWaterDate)
-    .sort((a, b) => a.time.localeCompare(b.time));
 
   function barClickHandler(setDate: (fn: (cur: string | undefined) => string | undefined) => void) {
     return (state: { activeLabel?: string | number } | null) => {
@@ -374,9 +364,9 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     <div>
       {chart !== 'bloodtest' && (
         <div className="date-nav">
-          <button onClick={() => { setMonth((m) => addMonths(m, -1)); setWaterDate(undefined); setStepsDate(undefined); }}>◀</button>
+          <button onClick={() => { setMonth((m) => addMonths(m, -1)); setStepsDate(undefined); }}>◀</button>
           <div className="title">{formatMonth(month)}</div>
-          <button onClick={() => { setMonth((m) => addMonths(m, 1)); setWaterDate(undefined); setStepsDate(undefined); }}>▶</button>
+          <button onClick={() => { setMonth((m) => addMonths(m, 1)); setStepsDate(undefined); }}>▶</button>
         </div>
       )}
 
@@ -462,14 +452,14 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             yAxisId="left"
             {...yAxisProps(theme)}
             domain={['dataMin - 1', 'dataMax + 1']}
-            tickFormatter={(v: number) => v.toFixed(0)}
+            allowDecimals={false}
           />
           <YAxis
             yAxisId="right"
             orientation="right"
             {...yAxisProps(theme)}
             domain={['dataMin - 1', 'dataMax + 1']}
-            tickFormatter={(v: number) => v.toFixed(0)}
+            allowDecimals={false}
           />
           <Tooltip {...tooltipProps(theme)} formatter={fmtWeightWaist} labelFormatter={fmtDay} />
           <Legend {...legendProps()} />
@@ -586,7 +576,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
       {chart === 'intake' && (
       <ChartCard title="飲水量">
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} onClick={barClickHandler(setWaterDate)}>
+        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis {...yAxisProps(theme)} />
@@ -594,24 +584,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           <Bar dataKey="water" name="飲水量" fill={theme.water} radius={[3, 3, 0, 0]} />
         </BarChart>
       </ChartCard>
-      )}
-
-      {chart === 'intake' && selectedWaterRow && selectedWaterLogs.length > 0 && (
-        <ChartCard title={`${selectedWaterRow.d}日の飲水(累積)`} sub={`合計 ${selectedWaterRow.water.toLocaleString()}ml`}>
-          <LineChart
-            data={selectedWaterLogs.reduce<{ time: string; sum: number }[]>((acc, l) => {
-              acc.push({ time: l.time, sum: (acc.at(-1)?.sum ?? 0) + l.ml });
-              return acc;
-            }, [])}
-            margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
-          >
-            <CartesianGrid stroke={theme.grid} vertical={false} />
-            <XAxis dataKey="time" tick={{ fontSize: 10, fill: theme.axis }} stroke={theme.grid} />
-            <YAxis {...yAxisProps(theme)} />
-            <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('ml')} />
-            <Line type="stepAfter" dataKey="sum" name="累積" stroke={theme.water} strokeWidth={2} dot={{ r: 3, fill: theme.water, strokeWidth: 0 }} />
-          </LineChart>
-        </ChartCard>
       )}
 
       {chart === 'steps' && (
