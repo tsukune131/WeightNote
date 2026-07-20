@@ -17,7 +17,15 @@ export interface Profile {
   trackWaist?: boolean;
   trackBloodPressure?: boolean;
   trackGlucose?: boolean;
+  // リマインダー通知の設定(発火自体はネイティブアプリ化後に実装。設定のみ先行)
+  notifyWeight?: boolean;
+  notifyWeightTimes?: string[]; // HH:mmの配列。デフォルト ['07:00', '20:00']
+  notifyWaist?: boolean;
+  notifyWaistDay?: number; // 毎月の通知日(1〜28)。デフォルト1
 }
+
+export const DEFAULT_WEIGHT_NOTIFY_TIMES = ['07:00', '20:00'];
+export const DEFAULT_WAIST_NOTIFY_DAY = 1;
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type MedicationTiming = 'before' | 'after';

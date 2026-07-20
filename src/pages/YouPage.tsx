@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
+import { NotificationSettings } from '../components/NotificationSettings';
 import { ProfileForm } from '../components/ProfileForm';
 import {
   ACTIVITY_LEVELS,
@@ -232,19 +233,27 @@ export function YouPage({ profile }: { profile: Profile }) {
               ['trackWaist', '腹囲'],
               ['trackBloodPressure', '血圧'],
               ['trackGlucose', '血糖値'],
-            ] as const
+            ] as const satisfies readonly (readonly [
+              'trackWaist' | 'trackBloodPressure' | 'trackGlucose',
+              string,
+            ])[]
           ).map(([key, label]) => (
             <label className="checkbox-inline" key={key}>
               <input
                 type="checkbox"
                 checked={profile[key] ?? false}
-                onChange={(e) => void db.profiles.update(profile.id, { [key]: e.target.checked })}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  void db.profiles.update(profile.id, { [key]: checked } as Partial<Profile>);
+                }}
               />
               {label}
             </label>
           ))}
         </div>
       </div>
+
+      <NotificationSettings profile={profile} />
 
       <BloodTestManager profileId={profile.id} />
 
