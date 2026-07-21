@@ -64,6 +64,17 @@ export interface WeightEntry {
   bodyFatPct?: number; // 体脂肪率(%)
 }
 
+/**
+ * その食事で何を食べたかの内訳。
+ * あくまで記録用のメモで、合計kcal(breakfast等)の計算元ではない。
+ * 追加で足し、削除で引くが、合計は手入力でも上書きできるため
+ * 内訳の合計と一致しないことがある。合計欄の値を常に正とする。
+ */
+export interface MealItem {
+  name: string;
+  kcal: number;
+}
+
 export interface MealEntry {
   id: number;
   profileId: number;
@@ -76,6 +87,10 @@ export interface MealEntry {
   lunchTime?: string;
   dinnerTime?: string;
   snackTime?: string;
+  breakfastItems?: MealItem[];
+  lunchItems?: MealItem[];
+  dinnerItems?: MealItem[];
+  snackItems?: MealItem[];
 }
 
 export interface WaterLog {

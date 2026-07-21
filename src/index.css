@@ -649,6 +649,22 @@ button:disabled {
   font-size: 13px;
 }
 
+.meal-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 10px;
+}
+
+.chip .chip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 4px 6px 12px;
+}
+
 .portion-row {
   display: flex;
   align-items: center;

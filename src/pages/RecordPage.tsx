@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Food, type MealSlot, type Profile } from '../db';
+import { db, type Food, type MealItem, type MealSlot, type Profile } from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
 import { type FoodPreset } from '../data/foodPresets';
 import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
+import { withItemAdded, withItemRemoved } from '../lib/mealItems';
 import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
@@ -299,6 +300,10 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     lunchTime?: string;
     dinnerTime?: string;
     snackTime?: string;
+    breakfastItems?: MealItem[];
+    lunchItems?: MealItem[];
+    dinnerItems?: MealItem[];
+    snackItems?: MealItem[];
   }>('meals', profileId, date);
   const [values, setValues] = useState<Record<string, string>>({
     breakfast: '',
@@ -311,6 +316,12 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     lunch: '',
     dinner: '',
     snack: '',
+  });
+  const [items, setItems] = useState<Record<string, MealItem[]>>({
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: [],
   });
 
   useEffect(() => {
@@ -326,6 +337,12 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
         lunch: entry.lunchTime ?? '',
         dinner: entry.dinnerTime ?? '',
         snack: entry.snackTime ?? '',
+      });
+      setItems({
+        breakfast: entry.breakfastItems ?? [],
+        lunch: entry.lunchItems ?? [],
+        dinner: entry.dinnerItems ?? [],
+        snack: entry.snackItems ?? [],
       });
     }
   }, [entry?.id]);
@@ -349,14 +366,22 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
   const [portion, setPortion] = useState(1);
   const results = useMemo(() => searchFoods(query), [query]);
 
-  function addKcal(key: string, kcal: number) {
-    setValues((v) => ({ ...v, [key]: String((Number(v[key]) || 0) + kcal) }));
+  /** メニューを内訳に足し、そのぶん合計kcalを増やす。時刻が未入力なら現在時刻を入れる */
+  function addItem(key: string, item: MealItem) {
+    const next = withItemAdded(items[key] ?? [], Number(values[key]) || 0, item);
+    setItems((s) => ({ ...s, [key]: next.items }));
+    setValues((v) => ({ ...v, [key]: String(next.kcal) }));
     setTimes((t) => (t[key] ? t : { ...t, [key]: nowTimeStr() }));
   }
 
+  function removeItem(key: string, index: number) {
+    const next = withItemRemoved(items[key] ?? [], Number(values[key]) || 0, index);
+    setItems((s) => ({ ...s, [key]: next.items }));
+    setValues((v) => ({ ...v, [key]: next.kcal ? String(next.kcal) : '' }));
+  }
+
   async function applyFood(key: string, food: Food) {
-    // 選んだメニューのkcalをその食事に加算。時刻が未入力なら現在時刻を入れる
-    addKcal(key, food.kcal);
+    addItem(key, { name: food.name, kcal: food.kcal });
     await db.foods.update(food.id, { uses: food.uses + 1 });
   }
 
@@ -366,7 +391,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
    * 保存するのは倍率をかける前の基準kcal(量は毎回選び直せる)。
    */
   async function applyPreset(key: string, preset: FoodPreset) {
-    addKcal(key, applyPortion(preset.kcal, portion));
+    addItem(key, { name: preset.name, kcal: applyPortion(preset.kcal, portion) });
     const existing = await db.foods
       .where('profileId')
       .equals(profileId)
@@ -428,7 +453,10 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     (times.breakfast || '') !== (entry?.breakfastTime ?? '') ||
     (times.lunch || '') !== (entry?.lunchTime ?? '') ||
     (times.dinner || '') !== (entry?.dinnerTime ?? '') ||
-    (times.snack || '') !== (entry?.snackTime ?? '');
+    (times.snack || '') !== (entry?.snackTime ?? '') ||
+    MEAL_FIELDS.some(
+      ([k]) => JSON.stringify(items[k] ?? []) !== JSON.stringify(entry?.[`${k}Items`] ?? []),
+    );
 
   async function save() {
     const data = {
@@ -440,12 +468,16 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
       lunchTime: times.lunch || undefined,
       dinnerTime: times.dinner || undefined,
       snackTime: times.snack || undefined,
+      breakfastItems: items.breakfast.length ? items.breakfast : undefined,
+      lunchItems: items.lunch.length ? items.lunch : undefined,
+      dinnerItems: items.dinner.length ? items.dinner : undefined,
+      snackItems: items.snack.length ? items.snack : undefined,
     };
     if (entry) await db.meals.update(entry.id, data);
     else await db.meals.add({ profileId, date, ...data } as never);
   }
 
-  useAutosave(JSON.stringify({ values, times }), dirty, save);
+  useAutosave(JSON.stringify({ values, times, items }), dirty, save);
 
   return (
     <div className="card">
@@ -518,6 +550,24 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
               />
             </label>
           </div>
+          {(items[key] ?? []).length > 0 && (
+            <div className="meal-items">
+              {items[key].map((it, i) => (
+                <span className="chip" key={`${it.name}-${i}`}>
+                  <span className="chip-label">
+                    {it.name} <span className="muted">{it.kcal}kcal</span>
+                  </span>
+                  <button
+                    className="chip-x"
+                    aria-label={`${it.name}を削除`}
+                    onClick={() => removeItem(key, i)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           {useMedication && medsForMeal.length > 0 && (
             <div className="medicine-box">
               {medsForMeal.map((m) => {
