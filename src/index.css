@@ -197,6 +197,11 @@ input::-webkit-date-and-time-value {
   flex: 0 0 110px;
 }
 
+/* 時間(分)は2〜3桁しか入らないので、内容欄に幅を譲る */
+.field-fixed-min {
+  flex: 0 0 84px;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap; /* 収まらない場合ははみ出さず折り返す */

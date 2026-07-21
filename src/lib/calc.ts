@@ -96,6 +96,31 @@ export function stepsToKcal(steps: number, weightKg: number): number {
   return 3.0 * weightKg * hours * 1.05;
 }
 
+/**
+ * 消費カロリーの推定に使う体重を選ぶ。
+ * 当日の記録 > その日以前の最新 > 全体の最新 の順。1件も無ければundefined。
+ */
+export function pickReferenceWeight(
+  weights: readonly { date: string; kg: number }[],
+  date: string,
+): number | undefined {
+  const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    sorted.find((w) => w.date === date)?.kg ??
+    sorted.filter((w) => w.date <= date).at(-1)?.kg ??
+    sorted.at(-1)?.kg
+  );
+}
+
+/**
+ * 運動の消費カロリー推定。kcal = METs × 体重 × 時間 × 1.05
+ * 歩数の推定(stepsToKcal)と同じ式で、安静時分を含む総消費として扱う。
+ */
+export function metsToKcal(mets: number, weightKg: number, minutes: number): number {
+  if (mets <= 0 || weightKg <= 0 || minutes <= 0) return 0;
+  return mets * weightKg * (minutes / 60) * 1.05;
+}
+
 /** stepsToKcalの逆算。指定カロリー分を歩くのに必要な歩数 */
 export function kcalToSteps(kcal: number, weightKg: number): number {
   if (kcal <= 0 || weightKg <= 0) return 0;

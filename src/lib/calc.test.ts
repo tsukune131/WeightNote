@@ -8,6 +8,8 @@ import {
   daysUntil,
   isMetaboWaist,
   kcalToSteps,
+  metsToKcal,
+  pickReferenceWeight,
   requiredDailyKcal,
   stepsToKcal,
   tdee,
@@ -102,5 +104,40 @@ describe('kcalToSteps', () => {
   it('0kcal以下は0歩', () => {
     expect(kcalToSteps(0, 70)).toBe(0);
     expect(kcalToSteps(-10, 70)).toBe(0);
+  });
+});
+
+describe('metsToKcal', () => {
+  it('体重60kgでクロール(8.3METs)30分は約262kcal', () => {
+    expect(metsToKcal(8.3, 60, 30)).toBeCloseTo(261.45, 1);
+  });
+
+  it('時間・体重・強度のどれかが0以下なら0', () => {
+    expect(metsToKcal(8.3, 60, 0)).toBe(0);
+    expect(metsToKcal(8.3, 0, 30)).toBe(0);
+    expect(metsToKcal(0, 60, 30)).toBe(0);
+  });
+});
+
+describe('pickReferenceWeight', () => {
+  const weights = [
+    { date: '2026-07-01', kg: 70 },
+    { date: '2026-07-10', kg: 68 },
+  ];
+
+  it('当日の記録を最優先する', () => {
+    expect(pickReferenceWeight(weights, '2026-07-10')).toBe(68);
+  });
+
+  it('当日が無ければそれ以前の最新を使う', () => {
+    expect(pickReferenceWeight(weights, '2026-07-05')).toBe(70);
+  });
+
+  it('その日以前が無ければ全体の最新で代用する', () => {
+    expect(pickReferenceWeight(weights, '2026-06-01')).toBe(68);
+  });
+
+  it('1件も無ければundefined', () => {
+    expect(pickReferenceWeight([], '2026-07-10')).toBeUndefined();
   });
 });

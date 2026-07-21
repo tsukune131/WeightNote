@@ -4,6 +4,8 @@ import { db, type Food, type MealItem, type MealSlot, type Profile } from '../db
 import { AutosaveNote, useAutosave } from '../components/autosave';
 import { type FoodPreset } from '../data/foodPresets';
 import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
+import { EXERCISE_PRESETS } from '../data/exercisePresets';
+import { matchExercise } from '../lib/exerciseSearch';
 import { withItemAdded, withItemRemoved } from '../lib/mealItems';
 import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
@@ -13,6 +15,8 @@ import {
   bmr,
   dailyDeficit,
   daysUntil,
+  metsToKcal,
+  pickReferenceWeight,
   requiredDailyKcal,
   stepsToKcal,
   totalKcalToGoal,
@@ -881,15 +885,42 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
     () => db.exercises.where('[profileId+date]').equals([profileId, date]).toArray(),
     [profileId, date],
   );
+  const weights = useLiveQuery(
+    () => db.weights.where('profileId').equals(profileId).toArray(),
+    [profileId],
+  );
   const [name, setName] = useState('');
+  const [minutes, setMinutes] = useState('');
   const [kcal, setKcal] = useState('');
+  // 推定値をそのまま使うか、ユーザーが上書きしたかを覚えておく
+  const [kcalEdited, setKcalEdited] = useState(false);
+
+  const refWeight = pickReferenceWeight(weights ?? [], date);
+  const preset = matchExercise(name);
+  const estimate =
+    preset && refWeight != null ? Math.round(metsToKcal(preset.mets, refWeight, Number(minutes))) : 0;
+
+  // 種目か時間を変えたら推定値を入れ直す(kcalを自分で直した後は触らない)
+  useEffect(() => {
+    if (kcalEdited) return;
+    setKcal(estimate > 0 ? String(estimate) : '');
+  }, [estimate, kcalEdited]);
 
   async function add() {
     const v = Number(kcal);
     if (!(v > 0)) return;
-    await db.exercises.add({ profileId, date, name: name.trim() || '運動', kcal: v } as never);
+    const label = name.trim() || '運動';
+    const mins = Number(minutes);
+    await db.exercises.add({
+      profileId,
+      date,
+      name: mins > 0 ? `${label} ${mins}分` : label,
+      kcal: v,
+    } as never);
     setName('');
+    setMinutes('');
     setKcal('');
+    setKcalEdited(false);
   }
 
   return (
@@ -897,15 +928,33 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
       <h2>運動での消費カロリー</h2>
       <p className="muted" style={{ marginTop: 0 }}>
         歩数以外の運動(筋トレ・水泳など)の消費カロリーを追加します。
+        種目と時間を入れると消費カロリーの目安が入ります。
       </p>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="field" style={{ marginBottom: 0 }}>
           内容
           <input
             type="text"
-            placeholder="例: 筋トレ"
+            list="exercise-presets"
+            placeholder="例: 水泳、筋トレ"
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <datalist id="exercise-presets">
+          {EXERCISE_PRESETS.map((p) => (
+            <option key={p.name} value={p.name} />
+          ))}
+        </datalist>
+        <label className="field field-fixed-min" style={{ marginBottom: 0 }}>
+          時間(分)
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            placeholder="30"
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
           />
         </label>
         <label className="field" style={{ marginBottom: 0 }}>
@@ -915,13 +964,23 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
             inputMode="numeric"
             min="1"
             value={kcal}
-            onChange={(e) => setKcal(e.target.value)}
+            onChange={(e) => {
+              setKcalEdited(true);
+              setKcal(e.target.value);
+            }}
           />
         </label>
         <button onClick={() => void add()} disabled={!(Number(kcal) > 0)} style={{ flex: '0 0 auto' }}>
           追加
         </button>
       </div>
+      <p className="muted" style={{ margin: '6px 0 0' }}>
+        {estimate > 0
+          ? `${preset!.name} ${Number(minutes)}分は約${estimate}kcalの目安です(体重${refWeight}kgで計算)。違う場合は書き換えてください。`
+          : preset && refWeight == null
+            ? '体重を記録すると、種目と時間から消費カロリーを推定できます。'
+            : '一覧にない運動も、そのまま入力してkcalを直接入れれば記録できます。'}
+      </p>
       {(items ?? []).length > 0 && (
         <div style={{ marginTop: 8 }}>
           {items!.map((it) => (
@@ -987,27 +1046,22 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
   const data = useLiveQuery(
     async () => {
       const key = [profile.id, date] as [number, string];
-      const [meal, step, exercises, weight, allWeights] = await Promise.all([
+      const [meal, step, exercises, allWeights] = await Promise.all([
         db.meals.where('[profileId+date]').equals(key).first(),
         db.steps.where('[profileId+date]').equals(key).first(),
         db.exercises.where('[profileId+date]').equals(key).toArray(),
-        db.weights.where('[profileId+date]').equals(key).first(),
         db.weights.where('profileId').equals(profile.id).toArray(),
       ]);
-      return { meal, step, exercises, weight, allWeights };
+      return { meal, step, exercises, allWeights };
     },
     [profile.id, date],
   );
 
   if (!data) return null;
-  const { meal, step, exercises, weight, allWeights } = data;
+  const { meal, step, exercises, allWeights } = data;
 
-  // 歩数消費の推定に使う体重: 当日 > それ以前の最新 > 全体の最新
   const sorted = [...allWeights].sort((a, b) => a.date.localeCompare(b.date));
-  const refWeight =
-    weight?.kg ??
-    sorted.filter((w) => w.date <= date).at(-1)?.kg ??
-    sorted.at(-1)?.kg;
+  const refWeight = pickReferenceWeight(allWeights, date);
 
   const intake = meal ? meal.breakfast + meal.lunch + meal.dinner + meal.snack : 0;
   const stepKcal = step && refWeight != null ? stepsToKcal(step.total, refWeight) : 0;
