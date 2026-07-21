@@ -196,6 +196,8 @@ export function YouPage({ profile }: { profile: Profile }) {
               onChange={(e) => setTargetWaist(e.target.value)}
             />
           </label>
+        </div>
+        <div className="row" style={{ alignItems: 'flex-end' }}>
           <label className="field field-fixed-date">
             達成日
             <input
@@ -204,8 +206,10 @@ export function YouPage({ profile }: { profile: Profile }) {
               onChange={(e) => setTargetDate(e.target.value)}
             />
           </label>
+          <button style={{ flex: '0 0 auto', marginBottom: 8 }} onClick={() => void saveGoal()}>
+            {goalSaved ? '保存しました ✓' : '目標を保存'}
+          </button>
         </div>
-        <button onClick={() => void saveGoal()}>{goalSaved ? '保存しました ✓' : '目標を保存'}</button>
 
         {hasGoal && totalKcal != null && remainDays != null && dailyKcal != null && (
           <div className="stat-grid" style={{ marginTop: 12 }}>
