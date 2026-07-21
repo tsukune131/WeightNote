@@ -359,6 +359,11 @@ button:disabled {
   font-size: 12px;
 }
 
+/* 「※〜」の注記。直前の説明文と続けて読まれないよう1行空ける */
+.note {
+  margin-top: 6px;
+}
+
 .hourly-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

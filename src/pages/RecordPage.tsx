@@ -1133,9 +1133,18 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
         歩数分 {Math.round(stepKcal)}kcal + 運動分 {exerciseKcal}kcal。
         カロリー貯金は「使ったカロリー(基礎代謝×1.2+歩数・運動)−食べたカロリー」。
         プラスなら体重が減る方向で、運動でも食事を抑えることでも貯まります。
-        {refWeight == null && ' ※体重が未記録のため計算できません。'}
-        {refWeight != null && meal == null && ' ※食事を記録するとカロリー貯金が表示されます。'}
       </p>
+      {/* 注記は説明文に埋もれないよう行を分ける */}
+      {refWeight == null && (
+        <p className="muted note" style={{ marginBottom: 0 }}>
+          ※体重が未記録のため計算できません。
+        </p>
+      )}
+      {refWeight != null && meal == null && (
+        <p className="muted note" style={{ marginBottom: 0 }}>
+          ※食事を記録するとカロリー貯金が表示されます。
+        </p>
+      )}
     </div>
   );
 }
