@@ -74,9 +74,9 @@ type ChartKey = 'weight' | 'intake' | 'steps' | 'burn' | 'health' | 'bloodtest';
 
 const CHART_TABS: { key: ChartKey; label: string }[] = [
   { key: 'weight', label: '体重・体脂肪率・腹囲' },
-  { key: 'intake', label: '摂取カロリー・飲水' },
+  { key: 'burn', label: 'カロリー収支' },
+  { key: 'intake', label: '摂取カロリー・飲水量' },
   { key: 'steps', label: '歩数' },
-  { key: 'burn', label: '消費・貯金' },
 ];
 
 export function TrendsPage({ profile }: { profile: Profile }) {
